@@ -16,37 +16,40 @@ CONTENTS:
 
 -----------------------------------------------------
 1) PREREQUISITES
------------------------------------------------------
-- Python 3.11+ installed
+    - Python 3.11+ installed
 
 -----------------------------------------------------
 2) Setup Instructions
 -----------------------------------------------------
 1. CLONE THE REPOSITORY
-   git clone <REPO_URL>
-   cd <PROJECT_FOLDER>
+    - git clone <REPO_URL>
+    - cd <PROJECT_FOLDER>
 
 2. CREATE AND ACTIVATE A VIRTUAL ENVIRONMENT 
-   python -m venv venv
+    - python -m venv venv
    # Windows:
-   venv\Scripts\activate
+    - venv\Scripts\activate
    # Mac/Linux:
-   source venv/bin/activate
+    - source venv/bin/activate
 
 3. INSTALL REQUIRED DEPENDENCIES
-   pip install -r requirements.txt
+    - pip install -r requirements.txt
 
 4. Move to Directory food_recipe
-    Open terminal and run command: cd food_recipe
+    - Open terminal and run command: 
+         - cd food_recipe
 
 5. Create Database
-    In the terminal run command: flask init-db
+    - In the terminal run command: 
+         - flask init-db
 
 6. Add Sample Data
-    In the terminal run command: flask sample-data
+    - In the terminal run command: 
+         - flask sample-data
 
 7. Clearing the Database Without Dropping the Tables (if needed)
-    In the terminal run command: flask clear-db
+    - In the terminal run command: 
+         - flask clear-db
 
 
 
