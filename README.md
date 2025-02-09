@@ -53,6 +53,8 @@ flask run
 
 # DATABASE SETUP
 
+SQLAlchemy is used for the database which uses sqlite3.
+
 #### 📌 Create the Database
 ```sh
 flask init-db
