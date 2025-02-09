@@ -1,10 +1,6 @@
-# db_init.py
 from flask.cli import with_appcontext
-import click
-from models import *
 from db_operations import *
-
-from flask.cli import with_appcontext
+from models import *
 import click
 
 def init_app(app):
@@ -12,13 +8,15 @@ def init_app(app):
     app.cli.add_command(init_db_command)
     app.cli.add_command(sample_data_command)
     app.cli.add_command(clear_db_command)
+    # app.cli.add_command(test_ondelete)
+    # app.cli.add_command(test_constraints)
 
 @click.command('init-db')
 @with_appcontext
 def init_db_command():
     """Clear existing data and create new tables."""
-    db.drop_all()  # Drops all tables
-    db.create_all()  # Creates new tables
+    db.drop_all() 
+    db.create_all()
     click.echo('Initialized the database.')
 
 @click.command('clear-db')
@@ -26,11 +24,9 @@ def init_db_command():
 def clear_db_command():
     """Clear all data from the database while preserving tables."""
     try:
-        # Delete data from junction tables first
         RecipeCategory.query.delete()
         RecipeIngredient.query.delete()
         
-        # Delete data from dependent tables
         NutritionalInfo.query.delete()
         Recipe.query.delete()
         Food.query.delete()

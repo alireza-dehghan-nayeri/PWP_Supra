@@ -1,8 +1,5 @@
 from models import *
 
-from sqlalchemy import desc
-from datetime import datetime
-
 # Food Operations
 def create_food(name, description=None, image_url=None):
     food = Food(name=name, description=description, image_url=image_url)
@@ -10,7 +7,7 @@ def create_food(name, description=None, image_url=None):
     db.session.commit()
     return food
 
-def get_food(food_id):
+def get_food_by_id(food_id):
     return Food.query.get_or_404(food_id)
 
 def get_all_foods():
@@ -45,7 +42,7 @@ def create_recipe(food_id, instruction, prep_time, cook_time, servings):
     db.session.commit()
     return recipe
 
-def get_recipe(recipe_id):
+def get_recipe_by_id(recipe_id):
     return Recipe.query.get_or_404(recipe_id)
 
 def get_all_recipes():
@@ -78,7 +75,7 @@ def create_ingredient(name, image_url=None):
     db.session.commit()
     return ingredient
 
-def get_ingredient(ingredient_id):
+def get_ingredient_by_id(ingredient_id):
     return Ingredient.query.get_or_404(ingredient_id)
 
 def get_all_ingredients():
@@ -105,7 +102,7 @@ def create_category(name, description=None):
     db.session.commit()
     return category
 
-def get_category(category_id):
+def get_category_by_id(category_id):
     return Category.query.get_or_404(category_id)
 
 def get_all_categories():
@@ -138,7 +135,7 @@ def create_nutritional_info(recipe_id, calories, protein, carbs, fat):
     db.session.commit()
     return nutritional_info
 
-def get_nutritional_info(nutritional_info_id):
+def get_nutritional_info_by_id(nutritional_info_id):
     return NutritionalInfo.query.get_or_404(nutritional_info_id)
 
 def get_recipe_nutritional_info(recipe_id):

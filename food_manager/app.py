@@ -11,9 +11,6 @@ def create_app():
     db.init_app(app)
     init_app(app)
     
-    # Register blueprints (if any)
-    # app.register_blueprint(...)
-    
     with app.app_context():  # Create tables inside the app context
         db.create_all()
     

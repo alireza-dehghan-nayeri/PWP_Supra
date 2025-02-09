@@ -1,7 +1,6 @@
-from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import CheckConstraint
 from config import *
-
 
 db = SQLAlchemy()
 
@@ -14,7 +13,7 @@ class Food(db.Model):
     image_url = db.Column(db.String(255), nullable=True)
     
     # Relationships
-    recipes = db.relationship('Recipe', back_populates='food', lazy='dynamic')
+    recipes = db.relationship('Recipe', back_populates='food', cascade="all, delete-orphan", lazy='dynamic')
 
     def __repr__(self):
         return f'<Food {self.name}>'
@@ -39,17 +38,29 @@ class Recipe(db.Model):
     __tablename__ = 'recipe'
     
     recipe_id = db.Column(db.Integer, primary_key=True)
-    food_id = db.Column(db.Integer, db.ForeignKey('food.food_id'), nullable=False)
+    food_id = db.Column(db.Integer, db.ForeignKey('food.food_id', ondelete="CASCADE"), nullable=False)
     instruction = db.Column(db.String(255), nullable=False)
     prep_time = db.Column(db.Integer, nullable=False)
     cook_time = db.Column(db.Integer, nullable=False)
-    servings = db.Column(db.Integer, nullable=False, default=1)
+    servings = db.Column(db.Integer, nullable=False)
     
     # Relationships
     food = db.relationship('Food', back_populates='recipes')
-    nutritional_info = db.relationship('NutritionalInfo', back_populates='recipe', uselist=False)
-    ingredients = db.relationship('Ingredient', secondary='recipe_ingredient', back_populates='recipes')
-    categories = db.relationship('Category', secondary='recipe_category', back_populates='recipes')
+    nutritional_info = db.relationship('NutritionalInfo', back_populates='recipe', cascade="all, delete-orphan",uselist=False)
+    ingredients = db.relationship('Ingredient', secondary='recipe_ingredient', cascade="all, delete", back_populates='recipes')
+    categories = db.relationship('Category', secondary='recipe_category', cascade="all, delete", back_populates='recipes')
+
+    __table_args__ = (
+        CheckConstraint(
+            "prep_time >= 0", name="prep_time_constraint"
+        ),
+        CheckConstraint(
+            "cook_time >= 0", name="cook_time_constraint"
+        ),
+           CheckConstraint(
+            "servings > 0", name="servings_constraint"
+        ),
+    )
 
     def __repr__(self):
         return f'<Recipe {self.recipe_id} for {self.food.name}>'
@@ -78,7 +89,7 @@ class Recipe(db.Model):
             instruction=data.get('instruction'),
             prep_time=data.get('prep_time'),
             cook_time=data.get('cook_time'),
-            servings=data.get('servings')
+            servings=data.get('servings'),
         )
 
 class Ingredient(db.Model):
@@ -89,7 +100,7 @@ class Ingredient(db.Model):
     image_url = db.Column(db.String(255), nullable=True)
     
     # Relationships
-    recipes = db.relationship('Recipe', secondary='recipe_ingredient', back_populates='ingredients')
+    recipes = db.relationship('Recipe', secondary='recipe_ingredient', cascade="all, delete", back_populates='ingredients')
 
     def __repr__(self):
         return f'<Ingredient {self.name}>'
@@ -116,7 +127,7 @@ class Category(db.Model):
     description = db.Column(db.String(255), nullable=True)
     
     # Relationships
-    recipes = db.relationship('Recipe', secondary='recipe_category', back_populates='categories')
+    recipes = db.relationship('Recipe', secondary='recipe_category',cascade="all, delete",back_populates='categories')
 
     def __repr__(self):
         return f'<Category {self.name}>'
@@ -139,7 +150,7 @@ class NutritionalInfo(db.Model):
     __tablename__ = 'nutritional_info'
     
     nutritional_info_id = db.Column(db.Integer, primary_key=True)
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id'), unique=True, nullable=False)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id', ondelete="CASCADE"), unique=True, nullable=False)
     calories = db.Column(db.Integer, nullable=False)
     protein = db.Column(db.Float, nullable=False)
     carbs = db.Column(db.Float, nullable=False)
@@ -147,6 +158,21 @@ class NutritionalInfo(db.Model):
     
     # Relationships
     recipe = db.relationship('Recipe', back_populates='nutritional_info')
+
+    __table_args__ = (
+        CheckConstraint(
+            "calories >= 0", name="calories_constraint"
+        ),
+           CheckConstraint(
+            "protein >= 0", name="protein_constraint"
+        ),
+           CheckConstraint(
+            "carbs >= 0", name="carbs_constraint"
+        ),
+           CheckConstraint(
+            "fat >= 0", name="fat_constraint"
+        ),
+    )
 
     def __repr__(self):
         return f'<NutritionalInfo for recipe {self.recipe_id}>'
@@ -174,10 +200,16 @@ class NutritionalInfo(db.Model):
 class RecipeIngredient(db.Model):
     __tablename__ = 'recipe_ingredient'
     
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id'), primary_key=True)
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.ingredient_id'), primary_key=True)
-    quantity = db.Column(db.Float, nullable=False, default=1)
-    unit = db.Column(db.String(64), nullable=True, default='piece')
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id',ondelete="CASCADE"), primary_key=True)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.ingredient_id',ondelete="CASCADE"), primary_key=True)
+    quantity = db.Column(db.Float, nullable=False)
+    unit = db.Column(db.String(64), nullable=False, default='piece')
+
+    __table_args__ = (
+        CheckConstraint(
+            "quantity > 0", name="quantity_constraint"
+        ),
+    )
 
     def __repr__(self):
         return f'<RecipeIngredient {self.recipe_id}:{self.ingredient_id}>'
@@ -202,8 +234,8 @@ class RecipeIngredient(db.Model):
 class RecipeCategory(db.Model):
     __tablename__ = 'recipe_category'
     
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id'), primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.category_id'), primary_key=True)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id',ondelete="CASCADE"), primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.category_id',ondelete="CASCADE"), primary_key=True)
 
     def __repr__(self):
         return f'<RecipeCategory {self.recipe_id}:{self.category_id}>'
