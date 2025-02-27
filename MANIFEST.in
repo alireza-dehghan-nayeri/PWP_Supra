@@ -1,0 +1,2 @@
+graft food_manager/static
+global-exclude *.pyc
