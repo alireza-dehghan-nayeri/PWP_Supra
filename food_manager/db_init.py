@@ -1,22 +1,20 @@
 from flask.cli import with_appcontext
-from db_operations import *
-from models import *
 import click
+from models import *
+from db_operations import *
 
 def init_app(app):
     """Initialize the database with the app"""
     app.cli.add_command(init_db_command)
     app.cli.add_command(sample_data_command)
     app.cli.add_command(clear_db_command)
-    # app.cli.add_command(test_ondelete)
-    # app.cli.add_command(test_constraints)
 
 @click.command('init-db')
 @with_appcontext
 def init_db_command():
     """Clear existing data and create new tables."""
-    db.drop_all() 
-    db.create_all()
+    db.drop_all()  # Drops all tables
+    db.create_all()  # Creates new tables
     click.echo('Initialized the database.')
 
 @click.command('clear-db')
@@ -24,9 +22,11 @@ def init_db_command():
 def clear_db_command():
     """Clear all data from the database while preserving tables."""
     try:
-        RecipeCategory.query.delete()
-        RecipeIngredient.query.delete()
+        # Delete data from junction tables first
+        db.session.execute(recipe_category.delete())
+        db.session.execute(recipe_ingredient.delete())
         
+        # Delete data from dependent tables
         NutritionalInfo.query.delete()
         Recipe.query.delete()
         Food.query.delete()
@@ -46,10 +46,10 @@ def sample_data_command():
     try:
         # Add sample foods
         foods_data = [
-            {'name': 'Pizza', 'description': 'Italian flatbread topped with various ingredients'},
-            {'name': 'Pasta', 'description': 'Italian noodles with sauce'},
-            {'name': 'Salad', 'description': 'Fresh mixed vegetables with dressing'},
-            {'name': 'Soup', 'description': 'Warm liquid food with various ingredients'}
+            {'name': 'Pizza', 'description': 'Italian flatbread topped with various ingredients', 'image_url': 'pizza.jpg'},
+            {'name': 'Pasta', 'description': 'Italian noodles with sauce', 'image_url': 'pasta.jpg'},
+            {'name': 'Salad', 'description': 'Fresh mixed vegetables with dressing', 'image_url': 'salad.jpg'},
+            {'name': 'Soup', 'description': 'Warm liquid food with various ingredients', 'image_url': 'soup.jpg'}
         ]
         foods = {food['name']: create_food(**food) for food in foods_data}
         
@@ -79,7 +79,7 @@ def sample_data_command():
         recipes_data = [
             {
                 'name': 'Margherita Pizza',
-                'food': foods['Pizza'],
+                'food_name': 'Pizza',
                 'instruction': ('1. Make dough with flour, water, and yeast\n'
                               '2. Spread tomato sauce\n'
                               '3. Add fresh mozzarella and basil\n'
@@ -88,13 +88,13 @@ def sample_data_command():
                 'cook_time': 15,
                 'servings': 4,
                 'ingredients': [
-                    {'ingredient': ingredients['Flour'], 'quantity': 500, 'unit': 'g'},
-                    {'ingredient': ingredients['Tomato'], 'quantity': 200, 'unit': 'g'},
-                    {'ingredient': ingredients['Cheese'], 'quantity': 150, 'unit': 'g'},
-                    {'ingredient': ingredients['Basil'], 'quantity': 10, 'unit': 'leaves'},
-                    {'ingredient': ingredients['Olive Oil'], 'quantity': 2, 'unit': 'tbsp'}
+                    {'ingredient_name': 'Flour', 'quantity': 500, 'unit': 'g'},
+                    {'ingredient_name': 'Tomato', 'quantity': 200, 'unit': 'g'},
+                    {'ingredient_name': 'Cheese', 'quantity': 150, 'unit': 'g'},
+                    {'ingredient_name': 'Basil', 'quantity': 10, 'unit': 'leaves'},
+                    {'ingredient_name': 'Olive Oil', 'quantity': 2, 'unit': 'tbsp'}
                 ],
-                'categories': [categories['Italian'], categories['Vegetarian']],
+                'categories': ['Italian', 'Vegetarian'],
                 'nutrition': {
                     'calories': 266,
                     'protein': 11,
@@ -104,7 +104,7 @@ def sample_data_command():
             },
             {
                 'name': 'Garlic Pasta',
-                'food': foods['Pasta'],
+                'food_name': 'Pasta',
                 'instruction': ('1. Cook pasta in salted water\n'
                               '2. Sauté garlic in olive oil\n'
                               '3. Toss pasta with garlic oil\n'
@@ -113,13 +113,13 @@ def sample_data_command():
                 'cook_time': 15,
                 'servings': 2,
                 'ingredients': [
-                    {'ingredient': ingredients['Garlic'], 'quantity': 4, 'unit': 'cloves'},
-                    {'ingredient': ingredients['Olive Oil'], 'quantity': 3, 'unit': 'tbsp'},
-                    {'ingredient': ingredients['Cheese'], 'quantity': 50, 'unit': 'g'},
-                    {'ingredient': ingredients['Salt'], 'quantity': 1, 'unit': 'tsp'},
-                    {'ingredient': ingredients['Pepper'], 'quantity': 0.5, 'unit': 'tsp'}
+                    {'ingredient_name': 'Garlic', 'quantity': 4, 'unit': 'cloves'},
+                    {'ingredient_name': 'Olive Oil', 'quantity': 3, 'unit': 'tbsp'},
+                    {'ingredient_name': 'Cheese', 'quantity': 50, 'unit': 'g'},
+                    {'ingredient_name': 'Salt', 'quantity': 1, 'unit': 'tsp'},
+                    {'ingredient_name': 'Pepper', 'quantity': 0.5, 'unit': 'tsp'}
                 ],
-                'categories': [categories['Italian'], categories['Quick & Easy']],
+                'categories': ['Italian', 'Quick & Easy'],
                 'nutrition': {
                     'calories': 320,
                     'protein': 9,
@@ -133,7 +133,8 @@ def sample_data_command():
         for recipe_data in recipes_data:
             # Create base recipe
             recipe = create_recipe(
-                food_id=recipe_data['food'].food_id,
+                name=recipe_data['name'],
+                food_name=recipe_data['food_name'],
                 instruction=recipe_data['instruction'],
                 prep_time=recipe_data['prep_time'],
                 cook_time=recipe_data['cook_time'],
@@ -143,22 +144,22 @@ def sample_data_command():
             # Add ingredients
             for ing_data in recipe_data['ingredients']:
                 add_ingredient_to_recipe(
-                    recipe_id=recipe.recipe_id,
-                    ingredient_id=ing_data['ingredient'].ingredient_id,
+                    recipe_name=recipe.name,
+                    ingredient_name=ing_data['ingredient_name'],
                     quantity=ing_data['quantity'],
                     unit=ing_data['unit']
                 )
             
             # Add categories
-            for category in recipe_data['categories']:
+            for category_name in recipe_data['categories']:
                 add_category_to_recipe(
-                    recipe_id=recipe.recipe_id,
-                    category_id=category.category_id
+                    recipe_name=recipe.name,
+                    category_name=category_name
                 )
             
             # Add nutritional info
             create_nutritional_info(
-                recipe_id=recipe.recipe_id,
+                recipe_name=recipe.name,
                 **recipe_data['nutrition']
             )
         

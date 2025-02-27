@@ -1,5 +1,5 @@
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import CheckConstraint
 from config import *
 
 db = SQLAlchemy()
@@ -7,20 +7,18 @@ db = SQLAlchemy()
 class Food(db.Model):
     __tablename__ = 'food'
     
-    food_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(64), primary_key=True)
     description = db.Column(db.String(255), nullable=True)
     image_url = db.Column(db.String(255), nullable=True)
     
     # Relationships
-    recipes = db.relationship('Recipe', back_populates='food', cascade="all, delete-orphan", lazy='dynamic')
+    recipes = db.relationship('Recipe', back_populates='food', lazy='dynamic')
 
     def __repr__(self):
         return f'<Food {self.name}>'
 
     def serialize(self):
         return {
-            'food_id': self.food_id,
             'name': self.name,
             'description': self.description,
             'image_url': self.image_url
@@ -37,77 +35,92 @@ class Food(db.Model):
 class Recipe(db.Model):
     __tablename__ = 'recipe'
     
-    recipe_id = db.Column(db.Integer, primary_key=True)
-    food_id = db.Column(db.Integer, db.ForeignKey('food.food_id', ondelete="CASCADE"), nullable=False)
+    name = db.Column(db.String(64), primary_key=True)
+    food_name = db.Column(db.String(64), db.ForeignKey('food.name'), nullable=False)
     instruction = db.Column(db.String(255), nullable=False)
     prep_time = db.Column(db.Integer, nullable=False)
     cook_time = db.Column(db.Integer, nullable=False)
-    servings = db.Column(db.Integer, nullable=False)
+    servings = db.Column(db.Integer, nullable=False, default=1)
     
     # Relationships
     food = db.relationship('Food', back_populates='recipes')
-    nutritional_info = db.relationship('NutritionalInfo', back_populates='recipe', cascade="all, delete-orphan",uselist=False)
-    ingredients = db.relationship('Ingredient', secondary='recipe_ingredient', cascade="all, delete", back_populates='recipes')
-    categories = db.relationship('Category', secondary='recipe_category', cascade="all, delete", back_populates='recipes')
-
-    __table_args__ = (
-        CheckConstraint(
-            "prep_time >= 0", name="prep_time_constraint"
-        ),
-        CheckConstraint(
-            "cook_time >= 0", name="cook_time_constraint"
-        ),
-           CheckConstraint(
-            "servings > 0", name="servings_constraint"
-        ),
+    nutritional_info = db.relationship('NutritionalInfo', back_populates='recipe', uselist=False)
+    
+    # Many-to-many relationships without explicit junction models
+    ingredients = db.relationship(
+        'Ingredient',
+        secondary='recipe_ingredient',
+        backref=db.backref('recipes', lazy='dynamic')
+    )
+    
+    categories = db.relationship(
+        'Category',
+        secondary='recipe_category',
+        backref=db.backref('recipes', lazy='dynamic')
     )
 
     def __repr__(self):
-        return f'<Recipe {self.recipe_id} for {self.food.name}>'
+        return f'<Recipe {self.name}>'
 
     def serialize(self):
+        # Get ingredient quantities from the junction table
+        ingredient_data = []
+        for ingredient in self.ingredients:
+            junction = db.session.query(
+                db.metadata.tables['recipe_ingredient']
+            ).filter_by(
+                recipe_name=self.name,
+                ingredient_name=ingredient.name
+            ).first()
+            
+            if junction:
+                ingredient_data.append({
+                    'ingredient': ingredient.serialize(),
+                    'quantity': junction.quantity,
+                    'unit': junction.unit
+                })
+            else:
+                ingredient_data.append({
+                    'ingredient': ingredient.serialize(),
+                    'quantity': None,
+                    'unit': None
+                })
+                
         return {
-            'recipe_id': self.recipe_id,
-            'food_id': self.food_id,
+            'name': self.name,
+            'food_name': self.food_name,
             'instruction': self.instruction,
             'prep_time': self.prep_time,
             'cook_time': self.cook_time,
             'servings': self.servings,
             'food': self.food.serialize(),
             'nutritional_info': self.nutritional_info.serialize() if self.nutritional_info else None,
-            'ingredients': [{'ingredient': ing.serialize(), 
-                           'quantity': next((ri.quantity for ri in self.recipe_ingredients if ri.ingredient_id == ing.ingredient_id), None),
-                           'unit': next((ri.unit for ri in self.recipe_ingredients if ri.ingredient_id == ing.ingredient_id), None)}
-                          for ing in self.ingredients],
+            'ingredients': ingredient_data,
             'categories': [cat.serialize() for cat in self.categories]
         }
 
     @staticmethod
     def deserialize(data):
         return Recipe(
-            food_id=data.get('food_id'),
+            name=data.get('name'),
+            food_name=data.get('food_name'),
             instruction=data.get('instruction'),
             prep_time=data.get('prep_time'),
             cook_time=data.get('cook_time'),
-            servings=data.get('servings'),
+            servings=data.get('servings')
         )
 
 class Ingredient(db.Model):
     __tablename__ = 'ingredient'
     
-    ingredient_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(64), primary_key=True)
     image_url = db.Column(db.String(255), nullable=True)
     
-    # Relationships
-    recipes = db.relationship('Recipe', secondary='recipe_ingredient', cascade="all, delete", back_populates='ingredients')
-
     def __repr__(self):
         return f'<Ingredient {self.name}>'
 
     def serialize(self):
         return {
-            'ingredient_id': self.ingredient_id,
             'name': self.name,
             'image_url': self.image_url
         }
@@ -122,19 +135,14 @@ class Ingredient(db.Model):
 class Category(db.Model):
     __tablename__ = 'category'
     
-    category_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(64), primary_key=True)
     description = db.Column(db.String(255), nullable=True)
     
-    # Relationships
-    recipes = db.relationship('Recipe', secondary='recipe_category',cascade="all, delete",back_populates='categories')
-
     def __repr__(self):
         return f'<Category {self.name}>'
 
     def serialize(self):
         return {
-            'category_id': self.category_id,
             'name': self.name,
             'description': self.description
         }
@@ -149,8 +157,7 @@ class Category(db.Model):
 class NutritionalInfo(db.Model):
     __tablename__ = 'nutritional_info'
     
-    nutritional_info_id = db.Column(db.Integer, primary_key=True)
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id', ondelete="CASCADE"), unique=True, nullable=False)
+    recipe_name = db.Column(db.String(64), db.ForeignKey('recipe.name'), primary_key=True)
     calories = db.Column(db.Integer, nullable=False)
     protein = db.Column(db.Float, nullable=False)
     carbs = db.Column(db.Float, nullable=False)
@@ -159,28 +166,12 @@ class NutritionalInfo(db.Model):
     # Relationships
     recipe = db.relationship('Recipe', back_populates='nutritional_info')
 
-    __table_args__ = (
-        CheckConstraint(
-            "calories >= 0", name="calories_constraint"
-        ),
-           CheckConstraint(
-            "protein >= 0", name="protein_constraint"
-        ),
-           CheckConstraint(
-            "carbs >= 0", name="carbs_constraint"
-        ),
-           CheckConstraint(
-            "fat >= 0", name="fat_constraint"
-        ),
-    )
-
     def __repr__(self):
-        return f'<NutritionalInfo for recipe {self.recipe_id}>'
+        return f'<NutritionalInfo for recipe {self.recipe_name}>'
 
     def serialize(self):
         return {
-            'nutritional_info_id': self.nutritional_info_id,
-            'recipe_id': self.recipe_id,
+            'recipe_name': self.recipe_name,
             'calories': self.calories,
             'protein': self.protein,
             'carbs': self.carbs,
@@ -190,65 +181,22 @@ class NutritionalInfo(db.Model):
     @staticmethod
     def deserialize(data):
         return NutritionalInfo(
-            recipe_id=data.get('recipe_id'),
+            recipe_name=data.get('recipe_name'),
             calories=data.get('calories'),
             protein=data.get('protein'),
             carbs=data.get('carbs'),
             fat=data.get('fat')
         )
 
-class RecipeIngredient(db.Model):
-    __tablename__ = 'recipe_ingredient'
-    
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id',ondelete="CASCADE"), primary_key=True)
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.ingredient_id',ondelete="CASCADE"), primary_key=True)
-    quantity = db.Column(db.Float, nullable=False)
-    unit = db.Column(db.String(64), nullable=False, default='piece')
+# Junction tables (without models)
+recipe_ingredient = db.Table('recipe_ingredient',
+    db.Column('recipe_name', db.String(64), db.ForeignKey('recipe.name'), primary_key=True),
+    db.Column('ingredient_name', db.String(64), db.ForeignKey('ingredient.name'), primary_key=True),
+    db.Column('quantity', db.Float, nullable=False, default=1),
+    db.Column('unit', db.String(64), nullable=True, default='piece')
+)
 
-    __table_args__ = (
-        CheckConstraint(
-            "quantity > 0", name="quantity_constraint"
-        ),
-    )
-
-    def __repr__(self):
-        return f'<RecipeIngredient {self.recipe_id}:{self.ingredient_id}>'
-
-    def serialize(self):
-        return {
-            'recipe_id': self.recipe_id,
-            'ingredient_id': self.ingredient_id,
-            'quantity': self.quantity,
-            'unit': self.unit
-        }
-
-    @staticmethod
-    def deserialize(data):
-        return RecipeIngredient(
-            recipe_id=data.get('recipe_id'),
-            ingredient_id=data.get('ingredient_id'),
-            quantity=data.get('quantity'),
-            unit=data.get('unit')
-        )
-
-class RecipeCategory(db.Model):
-    __tablename__ = 'recipe_category'
-    
-    recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.recipe_id',ondelete="CASCADE"), primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.category_id',ondelete="CASCADE"), primary_key=True)
-
-    def __repr__(self):
-        return f'<RecipeCategory {self.recipe_id}:{self.category_id}>'
-
-    def serialize(self):
-        return {
-            'recipe_id': self.recipe_id,
-            'category_id': self.category_id
-        }
-
-    @staticmethod
-    def deserialize(data):
-        return RecipeCategory(
-            recipe_id=data.get('recipe_id'),
-            category_id=data.get('category_id')
-        )
+recipe_category = db.Table('recipe_category',
+    db.Column('recipe_name', db.String(64), db.ForeignKey('recipe.name'), primary_key=True),
+    db.Column('category_name', db.String(64), db.ForeignKey('category.name'), primary_key=True)
+)
