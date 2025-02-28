@@ -75,10 +75,14 @@ class Recipe(db.Model):
             'servings': self.servings,
             'food': self.food.serialize(),
             'nutritional_info': self.nutritional_info.serialize() if self.nutritional_info else None,
-            'ingredients': [{'ingredient': ing.serialize(), 
-                           'quantity': next((ri.quantity for ri in self.recipe_ingredients if ri.ingredient_id == ing.ingredient_id), None),
-                           'unit': next((ri.unit for ri in self.recipe_ingredients if ri.ingredient_id == ing.ingredient_id), None)}
-                          for ing in self.ingredients],
+            'ingredients': [
+                {
+                    'ingredient': ing.serialize(),
+                    'quantity': next((ri.quantity for ri in RecipeIngredient.query.filter_by(recipe_id=self.recipe_id, ingredient_id=ing.ingredient_id)), None),
+                    'unit': next((ri.unit for ri in RecipeIngredient.query.filter_by(recipe_id=self.recipe_id, ingredient_id=ing.ingredient_id)), None)
+                }
+                for ing in self.ingredients
+            ],
             'categories': [cat.serialize() for cat in self.categories]
         }
 
@@ -253,6 +257,13 @@ class RecipeCategory(db.Model):
             category_id=data.get('category_id')
         )
 
+def init_app(app):
+    """Initialize the database with the app"""
+    app.cli.add_command(init_db_command)
+    app.cli.add_command(sample_data_command)
+    app.cli.add_command(clear_db_command)
+    
+    
 @click.command('init-db')
 @with_appcontext
 def init_db_command():

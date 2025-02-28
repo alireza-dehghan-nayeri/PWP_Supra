@@ -3,10 +3,15 @@ from food_manager import db
 # Food Operations
 def create_food(name, description=None, image_url=None):
     from food_manager.models import Food
+    existing_food = Food.query.filter_by(name=name).first()
+    if existing_food:
+        raise ValueError(f"Food with name '{name}' already exists.")
+
     food = Food(name=name, description=description, image_url=image_url)
     db.session.add(food)
     db.session.commit()
     return food
+
 
 def get_food_by_id(food_id):
     from food_manager.models import Food
@@ -155,6 +160,10 @@ def create_nutritional_info(recipe_id, calories, protein, carbs, fat):
     db.session.add(nutritional_info)
     db.session.commit()
     return nutritional_info
+
+def get_all_nutritions():
+    from food_manager.models import NutritionalInfo
+    return NutritionalInfo.query.all()
 
 def get_nutritional_info_by_id(nutritional_info_id):
     from food_manager.models import NutritionalInfo
