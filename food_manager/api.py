@@ -3,7 +3,7 @@ from flask_restful import Api
 from food_manager.resources.category import *
 from food_manager.resources.recipe import *
 from food_manager.resources.food import *
-from food_manager.resources.ingrdient import *
+from food_manager.resources.ingredient import *
 from food_manager.resources.nutrition import *
 
 # Define the API blueprint
