@@ -1,7 +1,8 @@
-from flask_sqlalchemy import SQLAlchemy
+import click 
+
 from sqlalchemy import CheckConstraint
 from flask.cli import with_appcontext
-import click  
+
 from food_manager import db
 from food_manager.db_operations import *
 

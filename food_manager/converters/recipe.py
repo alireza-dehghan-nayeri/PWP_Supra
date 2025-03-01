@@ -1,4 +1,4 @@
-from werkzeug.routing import BaseConverter
+from werkzeug.routing import BaseConverter, ValidationError
 from flask import abort
 from food_manager.db_operations import get_recipe_by_id, get_ingredient_by_id, get_category_by_id
 
@@ -8,7 +8,10 @@ class RecipeConverter(BaseConverter):
 
     def to_python(self, value):
         # Convert recipe_id to an integer for querying
-        return int(value)
+        try:
+            return int(value)
+        except ValueError:
+                raise ValidationError(f"Invalid food_id: {value}")
 
     def to_url(self, value):
         # Convert the Recipe object back to recipe_id for URL

@@ -1,4 +1,4 @@
-from werkzeug.routing import BaseConverter
+from werkzeug.routing import BaseConverter, ValidationError
 
 class IngredientConverter(BaseConverter):
     def __init__(self, map=None):
@@ -6,7 +6,10 @@ class IngredientConverter(BaseConverter):
 
     def to_python(self, value):
         # Convert the ingredient_id to an integer for querying
-        return int(value)
+        try:
+            return int(value)
+        except ValueError:
+                raise ValidationError(f"Invalid food_id: {value}")
 
     def to_url(self, value):
         # Convert the Ingredient object back to ingredient_id for URL

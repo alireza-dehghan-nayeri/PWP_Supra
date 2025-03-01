@@ -1,4 +1,4 @@
-from werkzeug.routing import BaseConverter
+from werkzeug.routing import BaseConverter, ValidationError
 
 class CategoryConverter(BaseConverter):
     def __init__(self, map=None):
@@ -6,7 +6,10 @@ class CategoryConverter(BaseConverter):
 
     def to_python(self, value):
         # Convert category_id to an integer for querying
-        return int(value)
+        try:
+            return int(value)
+        except ValueError:
+                raise ValidationError(f"Invalid food_id: {value}")
 
     def to_url(self, value):
         # Convert the Category object back to category_id for URL

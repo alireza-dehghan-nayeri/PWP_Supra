@@ -2,7 +2,16 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
+# Import models after initializing db
 db = SQLAlchemy()
+
+from food_manager import models
+from food_manager import api
+from food_manager.converters.food import FoodConverter
+from food_manager.converters.recipe import RecipeConverter
+from food_manager.converters.ingredient import IngredientConverter
+from food_manager.converters.category import CategoryConverter
+from food_manager.converters.nutritional_info import NutritionalInfoConverter
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
@@ -23,15 +32,18 @@ def create_app(test_config=None):
         pass
     
     db.init_app(app)
-
-    from . import models
+    
     app.cli.add_command(models.init_db_command)
     app.cli.add_command(models.sample_data_command)
     app.cli.add_command(models.clear_db_command)
-    # app.cli.add_command(models.test_ondelete)
-    # app.cli.add_command(models.test_constraints)
+    
+    app.url_map.converters['food'] = FoodConverter
+    app.url_map.converters['category'] = CategoryConverter
+    app.url_map.converters['recipe'] = RecipeConverter
+    app.url_map.converters['ingredient'] = IngredientConverter
+    app.url_map.converters['nutritional_info'] = NutritionalInfoConverter
 
-    from . import api
+
     app.register_blueprint(api.api_bp)
 
     with app.app_context():  # Create tables inside the app context
