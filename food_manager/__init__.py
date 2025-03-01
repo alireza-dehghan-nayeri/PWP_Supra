@@ -18,16 +18,11 @@ cache = Cache()
 
 from food_manager import models
 from food_manager import api
-from food_manager.db_operations import *
 from food_manager.converters.food import FoodConverter
 from food_manager.converters.recipe import RecipeConverter
 from food_manager.converters.ingredient import IngredientConverter
 from food_manager.converters.category import CategoryConverter
 from food_manager.converters.nutritional_info import NutritionalInfoConverter
-
-
-
-
 
 def create_app(test_config=None):
     """

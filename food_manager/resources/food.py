@@ -6,18 +6,19 @@ retrieving, creating, updating, and deleting them.
 """
 
 import json
-from flask import request, Response
+from flask import request
 from flask_restful import Resource
 
 from food_manager.db_operations import (
     create_food, get_food_by_id, get_all_foods, update_food, delete_food
 )
+from food_manager.utils.reponses import ResourceMixin
 from food_manager import cache
 
 
 # Food Resources
 
-class FoodListResource(Resource):
+class FoodListResource(Resource, ResourceMixin):
     """
     Resource for handling operations on the list of food items.
     This includes retrieving all food items (GET) and creating a new food item (POST).
@@ -30,14 +31,8 @@ class FoodListResource(Resource):
         :return: A JSON response containing a list of serialized food objects with
                  HTTP status code 200.
         """
-        # Retrieve all food objects from the database and serialize each object
-        foods = [food.serialize() for food in get_all_foods()]
         # Return the list of serialized food objects as JSON with status 200
-        return Response(
-            json.dumps(foods),
-            200,
-            mimetype="application/json"
-        )
+        return self.handle_get_all(get_all_foods)
 
     def post(self):
         """
@@ -45,37 +40,11 @@ class FoodListResource(Resource):
         :return: A JSON response with the serialized new food object, or an error
                  message if creation fails.
         """
-        # Extract JSON payload from the incoming request
-        data = request.get_json()
-        try:
-            # Create a new food item using the provided data
-            food = create_food(**data)
-            # Serialize and return the new food object with HTTP status 201 (Created)
-            return Response(
-                json.dumps(food.serialize()),
-                201,
-                mimetype="application/json"
-            )
-        except ValueError as e:
-            # Return a JSON error response with HTTP status 400 (Bad Request)
-            return Response(
-                json.dumps({"error": str(e)}),
-                400,
-                mimetype="application/json"
-            )
-        except Exception as e:
-            # Return a JSON error response with HTTP status 500 (Internal Server Error)
-            return Response(
-                json.dumps({
-                    "error": "An unexpected error occurred.",
-                    "details": str(e)
-                }),
-                500,
-                mimetype="application/json"
-            )
+        # Create a new food item using the provided data
+        return self.handle_create(create_food, request.get_json())
 
 
-class FoodResource(Resource):
+class FoodResource(Resource, ResourceMixin):
     """
     Resource for handling operations on a single food item.
     This includes retrieving, updating, and deleting a food item by its unique ID.
@@ -90,18 +59,7 @@ class FoodResource(Resource):
                  an error message with HTTP status code 404.
         """
         # Retrieve the food object from the database using its unique ID
-        food = get_food_by_id(food_id)
-        if food:
-            return Response(
-                json.dumps(food.serialize()),
-                200,
-                mimetype="application/json"
-            )
-        return Response(
-            json.dumps({"error": "Food not found"}),
-            404,
-            mimetype="application/json"
-        )
+        return self.handle_get_by_id(get_food_by_id, food_id)
 
     def put(self, food_id):
         """
@@ -110,16 +68,7 @@ class FoodResource(Resource):
         :return: A JSON response with the serialized updated food object and
                  HTTP status code 200.
         """
-        # Extract the JSON payload from the incoming request
-        data = request.get_json()
-        # Update the food item using the provided data; returns the updated Food object
-        food = update_food(food_id, **data)
-        # Serialize and return the updated food object with status code 200 (OK)
-        return Response(
-            json.dumps(food.serialize()),
-            200,
-            mimetype="application/json"
-        )
+        return self.handle_update(update_food, food_id)
 
     def delete(self, food_id):
         """
@@ -129,10 +78,4 @@ class FoodResource(Resource):
                  HTTP status code 204 (No Content).
         """
         # Delete the food item from the database using its unique ID
-        delete_food(food_id)
-        # Return a response indicating successful deletion with status code 204
-        return Response(
-            "Food Item Deleted",
-            204,
-            mimetype="application/json"
-        )
+        return self.handle_delete(delete_food, food_id)

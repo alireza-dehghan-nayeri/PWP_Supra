@@ -9,7 +9,8 @@ from sqlalchemy import CheckConstraint
 from flask.cli import with_appcontext
 
 from food_manager import db
-from food_manager.db_operations import *  # noqa: F401
+from food_manager.db_operations import add_category_to_recipe, add_ingredient_to_recipe, create_category, create_food, create_ingredient, create_nutritional_info, create_recipe
+#
 
 ###############################################################################
 # Model Definitions

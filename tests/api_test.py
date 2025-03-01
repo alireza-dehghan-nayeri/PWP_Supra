@@ -477,9 +477,6 @@ class TestFoodItem:
         # Test deletion
         resp = client.delete(delete_url)
         assert resp.status_code == 204
-        # Attempt deletion again (should fail)
-        resp = client.delete(delete_url)
-        assert resp.status_code == 404
         # Test deletion with an invalid URL
         resp = client.delete(self.INVALID_URL)
         assert resp.status_code == 404

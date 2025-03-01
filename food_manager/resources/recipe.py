@@ -17,15 +17,14 @@ from food_manager.db_operations import (
     add_category_to_recipe,
     remove_category_from_recipe,
 )
-# Import the Recipe model (if needed for further operations)
-from food_manager.models import Recipe
+from food_manager.utils.reponses import ResourceMixin, internal_server_error
 # Import cache from food_manager for caching responses to improve performance
 from food_manager import cache
 
 
 # Recipe Resources
 
-class RecipeListResource(Resource):
+class RecipeListResource(Resource, ResourceMixin):
     """
     Resource for handling operations on the list of recipes.
     Supports GET for retrieving all recipes and POST for creating a new recipe.
@@ -39,13 +38,7 @@ class RecipeListResource(Resource):
                  with HTTP status code 200.
         """
         # Retrieve all recipe objects from the database and serialize each one
-        recipes = [recipe.serialize() for recipe in get_all_recipes()]
-        # Return the serialized recipes as a JSON response with status code 200 (OK)
-        return Response(
-            json.dumps(recipes),
-            200,
-            mimetype="application/json"
-        )
+        return self.handle_get_all(get_all_recipes)
 
     def post(self):
         """
@@ -53,37 +46,10 @@ class RecipeListResource(Resource):
         :return: A JSON response with the serialized new recipe object on success,
                  or an error message if recipe creation fails.
         """
-        # Extract the JSON data from the incoming request
-        data = request.get_json()
-        try:
-            # Create a new recipe using the provided data
-            recipe = create_recipe(**data)
-            # Serialize the created recipe and return it with status code 201 (Created)
-            return Response(
-                json.dumps(recipe.serialize()),
-                201,
-                mimetype="application/json"
-            )
-        except ValueError as e:
-            # Handle known errors (e.g., validation errors) and return a 400 (Bad Request)
-            return Response(
-                json.dumps({"error": str(e)}),
-                400,
-                mimetype="application/json"
-            )
-        except Exception as e:
-            # Handle unexpected errors and return a 500 (Internal Server Error) response with details
-            return Response(
-                json.dumps({
-                    "error": "An unexpected error occurred.",
-                    "details": str(e)
-                }),
-                500,
-                mimetype="application/json"
-            )
+        return self.handle_create(create_recipe, request.json)
 
 
-class RecipeResource(Resource):
+class RecipeResource(Resource, ResourceMixin):
     """
     Resource for handling operations on a single recipe identified by its recipe_id.
     Supports GET for retrieving, PUT for updating, and DELETE for deleting a recipe.
@@ -97,20 +63,7 @@ class RecipeResource(Resource):
         :return: A JSON response with the serialized recipe object if found,
                  or an error message with status code 404 if not found.
         """
-        # Fetch the recipe object using its unique identifier
-        recipe = get_recipe_by_id(recipe_id)
-        if recipe:
-            # If the recipe exists, serialize it and return as JSON with status code 200 (OK)
-            return Response(
-                json.dumps(recipe.serialize()),
-                200,
-                mimetype="application/json"
-            )
-        return Response(
-            json.dumps({"error": "Recipe not found"}),
-            404,
-            mimetype="application/json"
-        )
+        return self.handle_get_by_id(get_recipe_by_id, recipe_id)
 
     def put(self, recipe_id):
         """
@@ -119,24 +72,7 @@ class RecipeResource(Resource):
         :return: A JSON response with the serialized updated recipe object,
                  or an error message if the update fails.
         """
-        # Extract JSON data from the request body containing update information
-        data = request.get_json()
-        try:
-            # Update the recipe using the provided data
-            updated_recipe = update_recipe(recipe_id, **data)
-            # Serialize the updated recipe and return it with status code 200 (OK)
-            return Response(
-                json.dumps(updated_recipe.serialize()),
-                200,
-                mimetype="application/json"
-            )
-        except Exception as e:
-            # Handle any errors during update and return an error message with status code 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+        return self.handle_update(update_recipe, recipe_id, request.get_json())
 
     def delete(self, recipe_id):
         """
@@ -145,18 +81,8 @@ class RecipeResource(Resource):
         :return: An empty response with status code 204 (No Content) on successful deletion,
                  or an error message if deletion fails.
         """
-        try:
-            # Delete the recipe from the database using its unique identifier
-            delete_recipe(recipe_id)
-            # Return an empty response with status code 204 (No Content) to indicate successful deletion
-            return Response("", 204, mimetype="application/json")
-        except Exception as e:
-            # Handle any errors during deletion and return an error message with status code 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+        
+        return self.handle_delete(delete_recipe, recipe_id)
 
 
 # Recipe-Ingredient Resource
@@ -205,11 +131,7 @@ class RecipeIngredientResource(Resource):
             )
         except Exception as e:
             # Handle any errors during the operation and return an error message with status code 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+            return internal_server_error(e)
 
     @cache.cached(timeout=86400)  # Cache GET responses for 24 hours (86400 seconds)
     def get(self, recipe_id):
@@ -271,11 +193,7 @@ class RecipeIngredientResource(Resource):
             )
         except Exception as e:
             # Handle any errors during the update and return an error message with status code 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+            return internal_server_error(e)
 
     def delete(self, recipe_id):
         """
@@ -312,11 +230,7 @@ class RecipeIngredientResource(Resource):
             )
         except Exception as e:
             # Handle any errors during the removal and return an error message with status code 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+            return internal_server_error(e)
 
 
 # Recipe-Category Resource
@@ -363,11 +277,7 @@ class RecipeCategoryResource(Resource):
             )
         except Exception as e:
             # Handle any errors during the operation and return an error message with status code 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+            return internal_server_error(e)
 
     @cache.cached(timeout=86400)  # Cache GET responses for 24 hours (86400 seconds)
     def get(self, recipe_id):
@@ -427,8 +337,4 @@ class RecipeCategoryResource(Resource):
             )
         except Exception as e:
             # Handle any errors during the removal and return an error message with status code 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+            return internal_server_error(e)

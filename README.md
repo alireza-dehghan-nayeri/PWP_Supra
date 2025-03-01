@@ -46,10 +46,6 @@ pip install -r requirements.txt
 ```sh
 cd food_manager
 ```
-#### 📌 Run the App
-```sh
-flask run
-```
 
 # DATABASE SETUP
 
@@ -57,17 +53,17 @@ SQLAlchemy is used for the database which uses sqlite3.
 
 #### 📌 Create the Database
 ```sh
-flask init-db
+flask --app food_manager:create_app init-db
 ```
 
 #### 📌 Add Sample Data
 ```sh
-flask sample-data
+flask --app food_manager:create_app sample-data
 ```
 
 #### 📌 Interact with Database
 ```sh
-flask shell
+flask --app food_manager:create_app shell
 Food.query.all()
 Recipe.query.all()
 Ingredient.query.all()
@@ -80,8 +76,28 @@ NutritionalInfo.query.all()
 cd instance
 sqlite3 food-manager.db .dump > dump.sql
 ```
+#### 📌 Run the Flask App
+```sh
+flask --app food_manager:create_app run 
+Hit the Url with Prefix: /api/ 
+e.g http://127.0.0.1:5000/api/foods/
+```
 
 #### 📌 Clearing the Database Without Dropping Tables (if needed)
 ```sh
-flask clear-db
+flask --app food_manager:create_app clear-db
 ```
+
+### 3️⃣ Run PyTest Instructions
+
+#### 📌 Set PyTest Path to the Current Root Directory
+```sh
+export PYTHONPATH=$(pwd)
+```
+
+#### 📌 Run all the PyTest Cases for each API
+```sh
+pytest -v tests/api_test.py  
+```
+
+

@@ -7,14 +7,11 @@ endpoint to its corresponding resource class.
 # Import necessary modules for creating a blueprint and RESTful API.
 from flask import Blueprint
 from flask_restful import Api
-
-# Import all resource classes from various resource modules.
-# Note: Wildcard imports are not recommended because they can hide unused or missing names.
-from food_manager.resources.category import *
-from food_manager.resources.recipe import *
-from food_manager.resources.food import *
-from food_manager.resources.ingredient import *
-from food_manager.resources.nutrition import *
+from food_manager.resources.category import CategoryListResource, CategoryResource
+from food_manager.resources.recipe import RecipeCategoryResource, RecipeListResource, RecipeResource, RecipeIngredientResource
+from food_manager.resources.food import FoodListResource, FoodResource
+from food_manager.resources.ingredient import IngredientListResource, IngredientResource
+from food_manager.resources.nutrition import NutritionalInfoListResource, NutritionalInfoResource
 
 # ------------------------------------------------------------------------------
 # Blueprint and API Instance Creation

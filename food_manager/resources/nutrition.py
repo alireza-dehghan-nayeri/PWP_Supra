@@ -12,12 +12,13 @@ from food_manager.db_operations import (
     create_nutritional_info, get_all_nutritions, get_nutritional_info_by_id
 )
 from food_manager.db_operations import update_nutritional_info, delete_nutritional_info
+from food_manager.utils.reponses import ResourceMixin
 from food_manager import cache
 
 
 # NutritionalInfo Resources
 
-class NutritionalInfoListResource(Resource):
+class NutritionalInfoListResource(Resource, ResourceMixin):
     """
     Resource for handling operations on the list of nutritional information items.
     This includes retrieving all nutritional info items (GET) and creating a new 
@@ -31,24 +32,7 @@ class NutritionalInfoListResource(Resource):
         :return: A JSON response containing a list of serialized nutritional info
                  objects with HTTP status code 200.
         """
-        try:
-            # Retrieve all nutritional info objects from the database
-            nutritional_infos = get_all_nutritions()  # Assuming this returns a list
-            # Serialize each nutritional info object and convert the list to a JSON string
-            return Response(
-                json.dumps(
-                    [nutritional_info.serialize() for nutritional_info in nutritional_infos]
-                ),
-                200,
-                mimetype="application/json"
-            )
-        except Exception as e:
-            # If an error occurs, return an error message with HTTP status code 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+        return self.handle_get_all(get_all_nutritions)
 
     def post(self):
         """
@@ -56,27 +40,9 @@ class NutritionalInfoListResource(Resource):
         :return: A JSON response with the serialized new nutritional info object or 
                  an error message if creation fails.
         """
-        # Extract JSON payload from the incoming request
-        data = request.get_json()
-        try:
-            # Create a new nutritional info item using the provided data
-            nutritional_info = create_nutritional_info(**data)
-            # Serialize the new nutritional info object and return it with HTTP status 201
-            return Response(
-                json.dumps(nutritional_info.serialize()),
-                201,
-                mimetype="application/json"
-            )
-        except Exception as e:
-            # If an error occurs during creation, return an error message with status 500
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+        return self.handle_create(create_nutritional_info, request.get_json())
 
-
-class NutritionalInfoResource(Resource):
+class NutritionalInfoResource(Resource, ResourceMixin):
     """
     Resource for handling operations on a single nutritional information item.
     This includes retrieving, updating, and deleting a nutritional info item by its ID.
@@ -90,26 +56,7 @@ class NutritionalInfoResource(Resource):
         :return: A JSON response with the serialized nutritional info object if found,
                  or an error message with HTTP status code 404 if not found.
         """
-        try:
-            # Retrieve the nutritional info object using its ID
-            nutritional_info = get_nutritional_info_by_id(nutritional_info_id)
-            if nutritional_info:
-                return Response(
-                    json.dumps(nutritional_info.serialize()),
-                    200,
-                    mimetype="application/json"
-                )
-            return Response(
-                json.dumps({"error": "Nutritional Info not found"}),
-                404,
-                mimetype="application/json"
-            )
-        except Exception as e:
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+        return self.handle_get_by_id(get_nutritional_info_by_id, nutritional_info_id)
 
     def put(self, nutritional_info_id):
         """
@@ -118,21 +65,7 @@ class NutritionalInfoResource(Resource):
         :return: A JSON response with the serialized updated nutritional info object,
                  or an error message if the update fails.
         """
-        # Extract JSON payload from the incoming request for updating the nutritional info item
-        data = request.get_json()
-        try:
-            nutritional_info = update_nutritional_info(nutritional_info_id, **data)
-            return Response(
-                json.dumps(nutritional_info.serialize()),
-                200,
-                mimetype="application/json"
-            )
-        except Exception as e:
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+        return self.handle_update(update_nutritional_info, nutritional_info_id)
 
     def delete(self, nutritional_info_id):
         """
@@ -141,12 +74,4 @@ class NutritionalInfoResource(Resource):
         :return: A response with HTTP status code 204 (No Content) if deletion is successful,
                  or an error message if deletion fails.
         """
-        try:
-            delete_nutritional_info(nutritional_info_id)
-            return Response("", 204)
-        except Exception as e:
-            return Response(
-                json.dumps({"error": str(e)}),
-                500,
-                mimetype="application/json"
-            )
+        return self.handle_delete(delete_nutritional_info, nutritional_info_id)
