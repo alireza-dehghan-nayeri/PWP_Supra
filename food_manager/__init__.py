@@ -10,6 +10,12 @@ from flask.cli import with_appcontext
 from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 
+# Initialize the SQLAlchemy database instance.
+db = SQLAlchemy()
+
+# Create a global Cache instance for caching operations.
+cache = Cache()
+
 from food_manager import models
 from food_manager import api
 from food_manager.db_operations import *
@@ -19,11 +25,7 @@ from food_manager.converters.ingredient import IngredientConverter
 from food_manager.converters.category import CategoryConverter
 from food_manager.converters.nutritional_info import NutritionalInfoConverter
 
-# Initialize the SQLAlchemy database instance.
-db = SQLAlchemy()
 
-# Create a global Cache instance for caching operations.
-cache = Cache()
 
 
 

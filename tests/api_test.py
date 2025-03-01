@@ -7,21 +7,21 @@ for resources such as foods, categories, ingredients, recipes, and nutritional
 information using Flask's test client.
 """
 
+# pylint: disable=redefined-outer-name,unused-argument,too-many-lines,wrong-import-order,unused-import,import-error
+
 import json
-import pytest
-import tempfile
 import os
+import tempfile
+
+import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.datastructures import Headers
-from jsonschema import validate, ValidationError
 
 # Import the application factory and database handle
 from food_manager import create_app, db
-# Import models (if needed for direct queries or validation)
-from food_manager.models import Food, Ingredient, Category
-# Import all database operations (used in utility functions or fixtures)
-from food_manager.db_operations import *
+# Import models if needed (currently not used in tests)
+# from food_manager.models import Food, Ingredient, Category
 
 # ------------------------------------------------------------------------------
 # Pytest Fixtures
@@ -242,6 +242,7 @@ def get_food_json(food_id=None):
     }
     return food
 
+
 def get_category_json(category_id=None):
     """
     Generate a sample category JSON object for testing.
@@ -258,6 +259,7 @@ def get_category_json(category_id=None):
     }
     return category
 
+
 def get_ingredient_json(ingredient_id=None):
     """
     Generate a sample ingredient JSON object for testing.
@@ -273,6 +275,7 @@ def get_ingredient_json(ingredient_id=None):
         "image_url": "test_ingredient.jpg"
     }
     return ingredient
+
 
 def get_recipe_json(recipe_id=None, food_id=1):
     """
@@ -293,6 +296,7 @@ def get_recipe_json(recipe_id=None, food_id=1):
         "servings": 4
     }
     return recipe
+
 
 def get_recipe_put_json(recipe_id=None, food_id=1):
     """
@@ -319,6 +323,7 @@ def get_recipe_put_json(recipe_id=None, food_id=1):
     }
     return recipe
 
+
 def get_nutritional_info_json(nutritional_info_id=None, recipe_id=1):
     """
     Generate a sample nutritional info JSON object for testing.
@@ -338,6 +343,7 @@ def get_nutritional_info_json(nutritional_info_id=None, recipe_id=1):
         "fat": 5
     }
     return nutrition
+
 
 def get_nutritional_info_put_json():
     """

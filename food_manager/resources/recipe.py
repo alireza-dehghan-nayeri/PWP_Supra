@@ -6,14 +6,22 @@ from flask_restful import Resource
 
 # Import various database operations for managing recipes and their associations
 from food_manager.db_operations import (
-    create_recipe, get_recipe_by_id, get_all_recipes, update_recipe, delete_recipe,
-    add_ingredient_to_recipe, update_recipe_ingredient, remove_ingredient_from_recipe,
-    add_category_to_recipe, remove_category_from_recipe
+    create_recipe,
+    get_recipe_by_id,
+    get_all_recipes,
+    update_recipe,
+    delete_recipe,
+    add_ingredient_to_recipe,
+    update_recipe_ingredient,
+    remove_ingredient_from_recipe,
+    add_category_to_recipe,
+    remove_category_from_recipe,
 )
 # Import the Recipe model (if needed for further operations)
 from food_manager.models import Recipe
 # Import cache from food_manager for caching responses to improve performance
 from food_manager import cache
+
 
 # Recipe Resources
 
@@ -27,12 +35,17 @@ class RecipeListResource(Resource):
     def get(self):
         """
         Handle GET requests to retrieve all recipes.
-        :return: A JSON response containing a list of serialized recipe objects with HTTP status code 200.
+        :return: A JSON response containing a list of serialized recipe objects
+                 with HTTP status code 200.
         """
         # Retrieve all recipe objects from the database and serialize each one
         recipes = [recipe.serialize() for recipe in get_all_recipes()]
         # Return the serialized recipes as a JSON response with status code 200 (OK)
-        return Response(json.dumps(recipes), 200, mimetype="application/json")
+        return Response(
+            json.dumps(recipes),
+            200,
+            mimetype="application/json"
+        )
 
     def post(self):
         """
@@ -46,13 +59,28 @@ class RecipeListResource(Resource):
             # Create a new recipe using the provided data
             recipe = create_recipe(**data)
             # Serialize the created recipe and return it with status code 201 (Created)
-            return Response(json.dumps(recipe.serialize()), 201, mimetype="application/json")
+            return Response(
+                json.dumps(recipe.serialize()),
+                201,
+                mimetype="application/json"
+            )
         except ValueError as e:
-            # Handle known errors (e.g., validation errors) and return a 400 (Bad Request) error response
-            return Response(json.dumps({"error": str(e)}), 400, mimetype="application/json")
+            # Handle known errors (e.g., validation errors) and return a 400 (Bad Request)
+            return Response(
+                json.dumps({"error": str(e)}),
+                400,
+                mimetype="application/json"
+            )
         except Exception as e:
             # Handle unexpected errors and return a 500 (Internal Server Error) response with details
-            return Response(json.dumps({"error": "An unexpected error occurred.", "details": str(e)}), 500, mimetype="application/json")
+            return Response(
+                json.dumps({
+                    "error": "An unexpected error occurred.",
+                    "details": str(e)
+                }),
+                500,
+                mimetype="application/json"
+            )
 
 
 class RecipeResource(Resource):
@@ -73,10 +101,16 @@ class RecipeResource(Resource):
         recipe = get_recipe_by_id(recipe_id)
         if recipe:
             # If the recipe exists, serialize it and return as JSON with status code 200 (OK)
-            return Response(json.dumps(recipe.serialize()), 200, mimetype="application/json")
-        else:
-            # If the recipe is not found, return an error message with status code 404 (Not Found)
-            return Response(json.dumps({"error": "Recipe not found"}), 404, mimetype="application/json")
+            return Response(
+                json.dumps(recipe.serialize()),
+                200,
+                mimetype="application/json"
+            )
+        return Response(
+            json.dumps({"error": "Recipe not found"}),
+            404,
+            mimetype="application/json"
+        )
 
     def put(self, recipe_id):
         """
@@ -91,10 +125,18 @@ class RecipeResource(Resource):
             # Update the recipe using the provided data
             updated_recipe = update_recipe(recipe_id, **data)
             # Serialize the updated recipe and return it with status code 200 (OK)
-            return Response(json.dumps(updated_recipe.serialize()), 200, mimetype="application/json")
+            return Response(
+                json.dumps(updated_recipe.serialize()),
+                200,
+                mimetype="application/json"
+            )
         except Exception as e:
-            # Handle any errors during update and return an error message with status code 500 (Internal Server Error)
-            return Response(json.dumps({"error": str(e)}), 500, mimetype="application/json")
+            # Handle any errors during update and return an error message with status code 500
+            return Response(
+                json.dumps({"error": str(e)}),
+                500,
+                mimetype="application/json"
+            )
 
     def delete(self, recipe_id):
         """
@@ -109,8 +151,12 @@ class RecipeResource(Resource):
             # Return an empty response with status code 204 (No Content) to indicate successful deletion
             return Response("", 204, mimetype="application/json")
         except Exception as e:
-            # Handle any errors during deletion and return an error message with status code 500 (Internal Server Error)
-            return Response(json.dumps({"error": str(e)}), 500, mimetype="application/json")
+            # Handle any errors during deletion and return an error message with status code 500
+            return Response(
+                json.dumps({"error": str(e)}),
+                500,
+                mimetype="application/json"
+            )
 
 
 # Recipe-Ingredient Resource
@@ -118,7 +164,8 @@ class RecipeResource(Resource):
 class RecipeIngredientResource(Resource):
     """
     Resource for managing ingredients associated with a specific recipe.
-    Supports POST for adding, GET for retrieving, PUT for updating, and DELETE for removing an ingredient from a recipe.
+    Supports POST for adding, GET for retrieving, PUT for updating, and DELETE for
+    removing an ingredient from a recipe.
     """
 
     def post(self, recipe_id):
@@ -126,8 +173,8 @@ class RecipeIngredientResource(Resource):
         Handle POST requests to add an ingredient to a recipe.
         Expects JSON data with 'ingredient_id', 'quantity', and optionally 'unit'.
         :param recipe_id: The unique identifier of the recipe.
-        :return: A JSON response with a success message and status code 201 if the ingredient is added,
-                 or an error message if required data is missing or an error occurs.
+        :return: A JSON response with a success message and status code 201 if the ingredient
+                 is added, or an error message if required data is missing or an error occurs.
         """
         # Extract JSON payload from the request
         data = request.get_json()
@@ -138,16 +185,31 @@ class RecipeIngredientResource(Resource):
 
         # Validate required fields are present
         if not ingredient_id or not quantity:
-            return Response(json.dumps({"error": "ingredient_id and quantity are required."}), 400, mimetype="application/json")
+            return Response(
+                json.dumps({"error": "ingredient_id and quantity are required."}),
+                400,
+                mimetype="application/json"
+            )
 
         try:
             # Add the ingredient to the recipe using the provided parameters
             add_ingredient_to_recipe(recipe_id, ingredient_id, quantity, unit)
             # Return a success message with status code 201 (Created)
-            return Response(json.dumps({"message": "Ingredient added successfully!", "recipe_id": recipe_id}), 201, mimetype="application/json")
+            return Response(
+                json.dumps({
+                    "message": "Ingredient added successfully!",
+                    "recipe_id": recipe_id
+                }),
+                201,
+                mimetype="application/json"
+            )
         except Exception as e:
-            # Handle any errors during the operation and return an error message with status code 500 (Internal Server Error)
-            return Response(json.dumps({"error": str(e)}), 500, mimetype="application/json")
+            # Handle any errors during the operation and return an error message with status code 500
+            return Response(
+                json.dumps({"error": str(e)}),
+                500,
+                mimetype="application/json"
+            )
 
     @cache.cached(timeout=86400)  # Cache GET responses for 24 hours (86400 seconds)
     def get(self, recipe_id):
@@ -161,10 +223,16 @@ class RecipeIngredientResource(Resource):
         recipe = get_recipe_by_id(recipe_id)
         if recipe:
             # If the recipe exists, serialize and return it with status code 200 (OK)
-            return Response(json.dumps(recipe.serialize()), 200, mimetype="application/json")
-        else:
-            # If the recipe is not found, return an error message with status code 404 (Not Found)
-            return Response(json.dumps({"error": "Recipe not found"}), 404, mimetype="application/json")
+            return Response(
+                json.dumps(recipe.serialize()),
+                200,
+                mimetype="application/json"
+            )
+        return Response(
+            json.dumps({"error": "Recipe not found"}),
+            404,
+            mimetype="application/json"
+        )
 
     def put(self, recipe_id):
         """
@@ -183,16 +251,31 @@ class RecipeIngredientResource(Resource):
 
         # Validate that ingredient_id is provided
         if not ingredient_id:
-            return Response(json.dumps({"error": "ingredient_id is required."}), 400, mimetype="application/json")
+            return Response(
+                json.dumps({"error": "ingredient_id is required."}),
+                400,
+                mimetype="application/json"
+            )
 
         try:
             # Update the ingredient details within the recipe
             update_recipe_ingredient(recipe_id, ingredient_id, quantity, unit)
             # Return a success message with status code 200 (OK)
-            return Response(json.dumps({"message": "Ingredient updated successfully!", "recipe_id": recipe_id}), 200, mimetype="application/json")
+            return Response(
+                json.dumps({
+                    "message": "Ingredient updated successfully!",
+                    "recipe_id": recipe_id
+                }),
+                200,
+                mimetype="application/json"
+            )
         except Exception as e:
-            # Handle any errors during the update and return an error message with status code 500 (Internal Server Error)
-            return Response(json.dumps({"error": str(e)}), 500, mimetype="application/json")
+            # Handle any errors during the update and return an error message with status code 500
+            return Response(
+                json.dumps({"error": str(e)}),
+                500,
+                mimetype="application/json"
+            )
 
     def delete(self, recipe_id):
         """
@@ -209,16 +292,31 @@ class RecipeIngredientResource(Resource):
 
         # Validate that ingredient_id is provided
         if not ingredient_id:
-            return Response(json.dumps({"error": "ingredient_id is required."}), 400, mimetype="application/json")
+            return Response(
+                json.dumps({"error": "ingredient_id is required."}),
+                400,
+                mimetype="application/json"
+            )
 
         try:
             # Remove the specified ingredient from the recipe
             remove_ingredient_from_recipe(recipe_id, ingredient_id)
             # Return a success message with status code 200 (OK)
-            return Response(json.dumps({"message": "Ingredient removed successfully!", "recipe_id": recipe_id}), 200, mimetype="application/json")
+            return Response(
+                json.dumps({
+                    "message": "Ingredient removed successfully!",
+                    "recipe_id": recipe_id
+                }),
+                200,
+                mimetype="application/json"
+            )
         except Exception as e:
-            # Handle any errors during the removal and return an error message with status code 500 (Internal Server Error)
-            return Response(json.dumps({"error": str(e)}), 500, mimetype="application/json")
+            # Handle any errors during the removal and return an error message with status code 500
+            return Response(
+                json.dumps({"error": str(e)}),
+                500,
+                mimetype="application/json"
+            )
 
 
 # Recipe-Category Resource
@@ -226,8 +324,8 @@ class RecipeIngredientResource(Resource):
 class RecipeCategoryResource(Resource):
     """
     Resource for managing categories associated with a specific recipe.
-    Supports POST for adding a category to a recipe, GET for retrieving a recipe with categories,
-    and DELETE for removing a category from a recipe.
+    Supports POST for adding a category to a recipe, GET for retrieving a recipe with
+    categories, and DELETE for removing a category from a recipe.
     """
 
     def post(self, recipe_id):
@@ -245,16 +343,31 @@ class RecipeCategoryResource(Resource):
 
         # Validate that category_id is provided
         if not category_id:
-            return Response(json.dumps({"error": "category_id is required."}), 400, mimetype="application/json")
+            return Response(
+                json.dumps({"error": "category_id is required."}),
+                400,
+                mimetype="application/json"
+            )
 
         try:
             # Add the specified category to the recipe
             add_category_to_recipe(recipe_id, category_id)
             # Return a success message with status code 201 (Created)
-            return Response(json.dumps({"message": "Category added successfully!", "recipe_id": recipe_id}), 201, mimetype="application/json")
+            return Response(
+                json.dumps({
+                    "message": "Category added successfully!",
+                    "recipe_id": recipe_id
+                }),
+                201,
+                mimetype="application/json"
+            )
         except Exception as e:
-            # Handle any errors during the operation and return an error message with status code 500 (Internal Server Error)
-            return Response(json.dumps({"error": str(e)}), 500, mimetype="application/json")
+            # Handle any errors during the operation and return an error message with status code 500
+            return Response(
+                json.dumps({"error": str(e)}),
+                500,
+                mimetype="application/json"
+            )
 
     @cache.cached(timeout=86400)  # Cache GET responses for 24 hours (86400 seconds)
     def get(self, recipe_id):
@@ -268,10 +381,16 @@ class RecipeCategoryResource(Resource):
         recipe = get_recipe_by_id(recipe_id)
         if recipe:
             # If the recipe exists, serialize and return it with status code 200 (OK)
-            return Response(json.dumps(recipe.serialize()), 200, mimetype="application/json")
-        else:
-            # If the recipe is not found, return an error message with status code 404 (Not Found)
-            return Response(json.dumps({"error": "Recipe not found"}), 404, mimetype="application/json")
+            return Response(
+                json.dumps(recipe.serialize()),
+                200,
+                mimetype="application/json"
+            )
+        return Response(
+            json.dumps({"error": "Recipe not found"}),
+            404,
+            mimetype="application/json"
+        )
 
     def delete(self, recipe_id):
         """
@@ -288,13 +407,28 @@ class RecipeCategoryResource(Resource):
 
         # Validate that category_id is provided
         if not category_id:
-            return Response(json.dumps({"error": "category_id is required."}), 400, mimetype="application/json")
+            return Response(
+                json.dumps({"error": "category_id is required."}),
+                400,
+                mimetype="application/json"
+            )
 
         try:
             # Remove the specified category from the recipe
             remove_category_from_recipe(recipe_id, category_id)
             # Return a success message with status code 200 (OK)
-            return Response(json.dumps({"message": "Category removed successfully!", "recipe_id": recipe_id}), 200, mimetype="application/json")
+            return Response(
+                json.dumps({
+                    "message": "Category removed successfully!",
+                    "recipe_id": recipe_id
+                }),
+                200,
+                mimetype="application/json"
+            )
         except Exception as e:
-            # Handle any errors during the removal and return an error message with status code 500 (Internal Server Error)
-            return Response(json.dumps({"error": str(e)}), 500, mimetype="application/json")
+            # Handle any errors during the removal and return an error message with status code 500
+            return Response(
+                json.dumps({"error": str(e)}),
+                500,
+                mimetype="application/json"
+            )
