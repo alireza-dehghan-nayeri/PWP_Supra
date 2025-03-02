@@ -31,7 +31,7 @@ The meeting focused on the second deliverable, which was the Database implementa
 ### Action points
 *List here the actions points discussed with assistants*
 - Use name as primary
-- Dont create model for jucntion table for recipe category
+- Dont create model for junction table for recipe category
 
 
 ## Meeting 3.
