@@ -19,16 +19,18 @@ The meeting focused on the first deliverable, which was the API description. The
 - Add AI disclaimer section
 
 ## Meeting 2.
-* **DATE:**
-* **ASSISTANTS:**
+* **DATE:** 2025-02-12
+* **ASSISTANTS:** Ivan Sanchez
+
 
 ### Minutes
 *Summary of what was discussed during the meeting*
+The meeting focused on the second deliverable, which was the Database implementation of the project. The database design, models and code was reviewed, and received good feedback from the assistant.
 
 ### Action points
 *List here the actions points discussed with assistants*
-
-
+- Use name as primary
+- Dont create model for jucntion table for recipe category
 
 
 ## Meeting 3.
