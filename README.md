@@ -11,12 +11,12 @@ __Remember to include all required documentation and HOWTOs, including how to cr
 
 # PROJECT SETUP
 
-### 1️⃣ Prerequisites
+### Prerequisites
 - 🐍 **Python 3.11+** installed
 
 ---
 
-### 2️⃣ Setup Instructions
+### Setup Instructions
 
 #### 📌 Clone the Repository
 ```sh
@@ -88,7 +88,7 @@ e.g http://127.0.0.1:5000/api/foods/
 flask --app food_manager:create_app clear-db
 ```
 
-### 3️⃣ Run PyTest Instructions
+### Run PyTest Instructions
 
 #### 📌 Set PyTest Path to the Current Root Directory
 ```sh
@@ -98,6 +98,10 @@ export PYTHONPATH=$(pwd)
 #### 📌 Run all the PyTest Cases for each API
 ```sh
 pytest -v tests/api_test.py  
+```
+### Run PyLint Instructions
+```sh
+pylint --disable=no-member,import-outside-toplevel,no-self-use ./food_manager
 ```
 
 

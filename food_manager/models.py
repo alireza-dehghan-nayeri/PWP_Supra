@@ -6,8 +6,8 @@ commands to initialize, clear, and populate the database with sample data.
 
 import click
 from sqlalchemy import CheckConstraint
+from sqlalchemy.exc import SQLAlchemyError
 from flask.cli import with_appcontext
-
 from food_manager import db
 from food_manager.db_operations import add_category_to_recipe, add_ingredient_to_recipe, create_category, create_food, create_ingredient, create_nutritional_info, create_recipe
 #
@@ -478,7 +478,7 @@ def clear_db_command():
 
         db.session.commit()
         click.echo('Cleared all data from the database.')
-    except Exception as e:
+    except SQLAlchemyError as e:
         db.session.rollback()
         click.echo(f'Error clearing database: {str(e)}')
 

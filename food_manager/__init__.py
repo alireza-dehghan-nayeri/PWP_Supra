@@ -4,9 +4,8 @@ This module initializes and configures the Flask application, including the
 SQLAlchemy database, caching, CLI commands, and URL converters.
 """
 
-import os, click
+import os
 from flask import Flask
-from flask.cli import with_appcontext
 from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 
