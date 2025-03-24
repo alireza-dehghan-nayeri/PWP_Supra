@@ -30,9 +30,8 @@ The meeting focused on the second deliverable, which was the Database implementa
 
 ### Action points
 *List here the actions points discussed with assistants*
-- Use name as primary
-- Dont create model for junction table for recipe category
-
+- Use the name attribute as the primary key.
+- Don't create a model for the recipe category junction table.
 
 ## Meeting 3.
 * **DATE:**
