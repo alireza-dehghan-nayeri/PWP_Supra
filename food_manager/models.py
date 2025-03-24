@@ -9,7 +9,9 @@ from sqlalchemy import CheckConstraint
 from sqlalchemy.exc import SQLAlchemyError
 from flask.cli import with_appcontext
 from food_manager import db
-from food_manager.db_operations import add_category_to_recipe, add_ingredient_to_recipe, create_category, create_food, create_ingredient, create_nutritional_info, create_recipe
+from food_manager.db_operations import add_category_to_recipe, add_ingredient_to_recipe
+from food_manager.db_operations import create_category, create_food, create_ingredient
+from food_manager.db_operations import create_nutritional_info, create_recipe
 #
 
 ###############################################################################
@@ -303,7 +305,8 @@ class NutritionalInfo(db.Model):
         """
         Serialize the NutritionalInfo object to a dictionary.
 
-        :return: Dictionary containing nutritional_info_id, recipe_id, calories, protein, carbs, and fat.
+        :return: Dictionary containing nutritional_info_id, recipe_id, calories, protein, carbs,
+        and fat.
         """
         return {
             'nutritional_info_id': self.nutritional_info_id,

@@ -20,7 +20,6 @@ def create_food(name, description=None, image_url=None):
     :return: The created Food object.
     :raises ValueError: If a food item with the same name already exists.
     """
-    
     from food_manager.models import Food
     # Check if a food with the given name already exists.
     existing_food = Food.query.filter_by(name=name).first()
@@ -138,8 +137,8 @@ def get_all_recipes():
     return Recipe.query.all()
 
 
-def update_recipe(recipe_id, food_id=None, instruction=None, prep_time=None, cook_time=None,
-                  servings=None):
+def update_recipe(recipe_id,food_id=None,instruction=None,prep_time=None,
+                  cook_time=None,servings=None):
     """
     Update an existing recipe.
 

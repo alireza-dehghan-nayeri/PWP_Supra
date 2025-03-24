@@ -8,7 +8,8 @@ endpoint to its corresponding resource class.
 from flask import Blueprint
 from flask_restful import Api
 from food_manager.resources.category import CategoryListResource, CategoryResource
-from food_manager.resources.recipe import RecipeCategoryResource, RecipeListResource, RecipeResource, RecipeIngredientResource
+from food_manager.resources.recipe import RecipeCategoryResource, RecipeListResource
+from food_manager.resources.recipe import RecipeResource, RecipeIngredientResource
 from food_manager.resources.food import FoodListResource, FoodResource
 from food_manager.resources.ingredient import IngredientListResource, IngredientResource
 from food_manager.resources.nutrition import NutritionalInfoListResource, NutritionalInfoResource
