@@ -70,6 +70,5 @@ api.add_resource(NutritionalInfoListResource, "/nutritional-info/")
 # Endpoint for retrieving, updating, or deleting a specific nutritional info record.
 # The 'nutritional_info' converter is used to parse the nutritional_info_id parameter.
 api.add_resource(
-    NutritionalInfoResource, 
-    "/nutritional-info/<nutritional_info:nutritional_info_id>/"
+    NutritionalInfoResource,"/nutritional-info/<nutritional_info:nutritional_info_id>/"
 )
