@@ -15,7 +15,7 @@ db = SQLAlchemy()
 # Create a global Cache instance for caching operations.
 cache = Cache()
 
-from food_manager import models
+from food_manager import cli
 from food_manager import api
 from food_manager.converters.food import FoodConverter
 from food_manager.converters.recipe import RecipeConverter
@@ -52,9 +52,9 @@ def create_app(test_config=None):
     db.init_app(app)
     cache.init_app(app)
 
-    app.cli.add_command(models.init_db_command)
-    app.cli.add_command(models.sample_data_command)
-    app.cli.add_command(models.clear_db_command)
+    app.cli.add_command(cli.init_db_command)
+    app.cli.add_command(cli.sample_data_command)
+    app.cli.add_command(cli.clear_db_command)
 
     app.url_map.converters['food'] = FoodConverter
     app.url_map.converters['category'] = CategoryConverter

@@ -67,22 +67,16 @@ class ResourceMixin:
     Mixin class providing common resource handler methods.
     """
     
-    def handle_get_all(self, get_all_func, serialize_func=None):
+    def handle_get_all(self, get_all_func):
         """
         Handle GET requests to retrieve all items.
         
         :param get_all_func: Function to retrieve all items
-        :param serialize_func: Optional function to serialize items (defaults to item.serialize())
         :return: JSON response with serialized items
         """
         try:
             items = get_all_func()
-            
-            if serialize_func:
-                serialized_items = [serialize_func(item) for item in items]
-            else:
-                serialized_items = [item.serialize() for item in items]
-                
+            serialized_items = [item.serialize() for item in items]
             return create_json_response(serialized_items)
         except Exception as e:
             return internal_server_error(e)
@@ -116,7 +110,6 @@ class ResourceMixin:
         """
         if data is None:
             data = handle_request_data()
-            
         try:
             item = create_func(**data)
             return create_json_response(item.serialize(), 201)

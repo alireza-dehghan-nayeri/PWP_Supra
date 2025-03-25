@@ -7,59 +7,14 @@ for resources such as foods, categories, ingredients, recipes, and nutritional
 information using Flask's test client.
 """
 
-# pylint: disable=redefined-outer-name,unused-argument,too-many-lines,wrong-import-order,unused-import,import-error
-
 import json
-import os
-import tempfile
-
 import pytest
-from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug.datastructures import Headers
-
-# Import the application factory and database handle
-from food_manager import create_app, db
-# Import models if needed (currently not used in tests)
-# from food_manager.models import Food, Ingredient, Category
 
 # ------------------------------------------------------------------------------
 # Pytest Fixtures
 # ------------------------------------------------------------------------------
-
-@pytest.fixture
-def client():
-    """
-    Create a Flask test client using a temporary SQLite database.
-
-    This fixture configures a temporary database to run tests in isolation.
-    It creates all tables before tests run and cleans up (drops tables and deletes
-    the temporary file) after the tests finish.
-
-    Yields:
-        FlaskClient: The test client for the Flask application.
-    """
-    # Create a temporary file for the database
-    db_fd, db_fname = tempfile.mkstemp()
-    # Define test configuration using the temporary database file
-    config = {"SQLALCHEMY_DATABASE_URI": "sqlite:///" + db_fname, "TESTING": True}
-
-    # Create the Flask app using the test configuration
-    app = create_app(config)
-
-    with app.app_context():
-        db.create_all()  # Create all tables
-
-    # Yield the test client for use in tests
-    yield app.test_client()
-
-    # Cleanup: remove the session, drop all tables, and delete the temporary file
-    with app.app_context():
-        db.session.remove()
-        db.drop_all()
-    os.close(db_fd)
-    os.unlink(db_fname)
-
 
 @pytest.fixture
 def setup_food(client):
@@ -221,6 +176,7 @@ def setup_nutritional_info_item(client, setup_recipe):
     assert response.status_code == 201, f"Failed to create nutritional info: {response.data}"
     return response.json['nutritional_info_id']
 
+
 # ------------------------------------------------------------------------------
 # Utility Functions for Test Data
 # ------------------------------------------------------------------------------
@@ -360,6 +316,7 @@ def get_nutritional_info_put_json():
     }
     return nutrition
 
+
 # ------------------------------------------------------------------------------
 # Test Classes for API Endpoints
 # ------------------------------------------------------------------------------
@@ -418,6 +375,7 @@ class TestFoodList:
             print("Server Error:", resp.data.decode())
         assert resp.status_code == 500
 
+
 class TestFoodItem:
     """
     Test cases for the FoodResource endpoint.
@@ -426,6 +384,7 @@ class TestFoodItem:
     """
     RESOURCE_URL = "/api/foods/1/"
     INVALID_URL = "/api/foods/invalid/"
+    INVALID_ID_URL = "/api/foods/2/"
 
     def test_get(self, client: FlaskClient, setup_food):
         """
@@ -433,6 +392,10 @@ class TestFoodItem:
 
         Uses the setup_food fixture to ensure the food exists.
         """
+        resp = client.get(self.INVALID_URL)
+        assert resp.status_code == 404
+        resp = client.get(self.INVALID_ID_URL)
+        assert resp.status_code == 500
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
@@ -481,6 +444,7 @@ class TestFoodItem:
         resp = client.delete(self.INVALID_URL)
         assert resp.status_code == 404
 
+
 class TestCategoryList:
     """
     Test cases for the CategoryListResource endpoint.
@@ -527,6 +491,7 @@ class TestCategoryList:
         invalid.pop("name")
         resp = client.post(self.RESOURCE_URL, json=invalid)
         assert resp.status_code == 500
+
 
 class TestCategoryItem:
     """
@@ -586,6 +551,7 @@ class TestCategoryItem:
         resp = client.delete(delete_url)
         assert resp.status_code == 204
 
+
 class TestIngredientList:
     """
     Test cases for the IngredientListResource endpoint.
@@ -633,6 +599,7 @@ class TestIngredientList:
         invalid.pop("name")
         resp = client.post(self.RESOURCE_URL, json=invalid)
         assert resp.status_code == 500
+
 
 class TestIngredientItem:
     """
@@ -694,6 +661,7 @@ class TestIngredientItem:
         resp = client.delete(self.INVALID_URL)
         assert resp.status_code == 404
 
+
 class TestRecipeList:
     """
     Test cases for the RecipeListResource endpoint.
@@ -742,6 +710,7 @@ class TestRecipeList:
         invalid.pop("food_id")
         resp = client.post(self.RESOURCE_URL, json=invalid)
         assert resp.status_code == 500
+
 
 class TestRecipeItem:
     """
@@ -812,6 +781,7 @@ class TestRecipeItem:
         resp = client.delete(self.INVALID_URL)
         assert resp.status_code == 404
 
+
 class TestRecipeIngredient:
     """
     Test cases for the RecipeIngredientResource endpoint.
@@ -836,7 +806,7 @@ class TestRecipeIngredient:
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
 
-    def test_post(self, client: FlaskClient):
+    def test_post(self, client: FlaskClient, setup_recipe):
         """
         Test POST request to add an ingredient to a recipe.
 
@@ -868,7 +838,7 @@ class TestRecipeIngredient:
         resp = client.post(self.INVALID_URL, json=valid)
         assert resp.status_code == 404
 
-    def test_put(self, client: FlaskClient):
+    def test_put(self, client: FlaskClient, setup_recipe):
         """
         Test PUT request to update a recipe ingredient.
 
@@ -900,7 +870,7 @@ class TestRecipeIngredient:
         resp = client.put(self.INVALID_URL, json=update_data)
         assert resp.status_code == 404
 
-    def test_delete(self, client: FlaskClient):
+    def test_delete(self, client: FlaskClient, setup_recipe):
         """
         Test DELETE request to remove an ingredient from a recipe.
 
@@ -927,6 +897,7 @@ class TestRecipeIngredient:
         resp = client.delete(self.INVALID_URL, json=delete_data)
         assert resp.status_code == 404
 
+
 class TestRecipeCategory:
     """
     Test cases for the RecipeCategoryResource endpoint.
@@ -951,7 +922,7 @@ class TestRecipeCategory:
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
 
-    def test_post(self, client: FlaskClient):
+    def test_post(self, client: FlaskClient, setup_recipe):
         """
         Test POST request to add a category to a recipe.
 
@@ -979,7 +950,7 @@ class TestRecipeCategory:
         resp = client.post(self.INVALID_URL, json=valid)
         assert resp.status_code == 404
 
-    def test_delete(self, client: FlaskClient):
+    def test_delete(self, client: FlaskClient, setup_recipe):
         """
         Test DELETE request to remove a category from a recipe.
 
@@ -1001,6 +972,7 @@ class TestRecipeCategory:
         assert resp.status_code == 400
         resp = client.delete(self.INVALID_URL, json=delete_data)
         assert resp.status_code == 404
+
 
 class TestNutritionalInfoList:
     """
@@ -1059,6 +1031,7 @@ class TestNutritionalInfoList:
         invalid.pop("calories")
         resp = client.post(self.RESOURCE_URL, json=invalid)
         assert resp.status_code == 500
+
 
 class TestNutritionalInfoItem:
     """

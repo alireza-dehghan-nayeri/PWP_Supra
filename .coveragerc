@@ -1,0 +1,3 @@
+[run]
+omit =
+    food_manager/cli.py

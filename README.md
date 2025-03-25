@@ -97,9 +97,16 @@ export PYTHONPATH=$(pwd)
 
 #### 📌 Run all the PyTest Cases for each API
 ```sh
-pytest -v tests/api_test.py  
+pytest -v tests/test_api.py  
 ```
+#### 📌 Output the Test Coverage
+```sh
+pytest --cov=food_manager --cov-report=html     
+```
+
 ### Run PyLint Instructions
+
+#### 📌 Run PyLint for all files in food_manager directory
 ```sh
 pylint --disable=no-member,import-outside-toplevel,no-self-use ./food_manager
 ```

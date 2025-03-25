@@ -22,7 +22,7 @@ def create_food(name, description=None, image_url=None):
     """
     
     from food_manager.models import Food
-    # Check if a food with the given name already exists.
+    # Check if food with the given name already exists.
     existing_food = Food.query.filter_by(name=name).first()
     if existing_food:
         raise ValueError(f"Food with name '{name}' already exists.")
