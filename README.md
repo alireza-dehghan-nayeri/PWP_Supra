@@ -83,6 +83,12 @@ Hit the Url with Prefix: /api/
 e.g http://127.0.0.1:5000/api/foods/
 ```
 
+#### 📌 Running Api Docs
+```sh
+flask --app food_manager:create_app run 
+Hit the Url with Prefix: http://127.0.0.1:5000/apidocs/#/
+```
+
 #### 📌 Clearing the Database Without Dropping Tables (if needed)
 ```sh
 flask --app food_manager:create_app clear-db
