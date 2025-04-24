@@ -1,28 +1,31 @@
 """
-Module for Ingredient API endpoints.
+Ingredient API Resource Module with Hypermedia (MASON) Support
 
-This module defines resources for handling ingredients including retrieving,
-creating, updating, and deleting them.
+Provides RESTful endpoints for listing, creating, retrieving, updating,
+and deleting ingredient items, enriched with MASON hypermedia controls.
 """
 
-from flask import request
+import json
+from flask import request, url_for, Response
 from flask_restful import Resource
 from flasgger import swag_from
+
 from food_manager.db_operations import (
-    create_ingredient,
-    get_ingredient_by_id,
-    get_all_ingredients,
-    update_ingredient,
-    delete_ingredient,
+    create_ingredient, get_ingredient_by_id, get_all_ingredients,
+    update_ingredient, delete_ingredient,
 )
 from food_manager.utils.reponses import ResourceMixin
 from food_manager.utils.cache import class_cache
+from food_manager.constants import MASON, NAMESPACE, LINK_RELATIONS_URL
+from food_manager.builder import FoodManagerBuilder
 
 
-# Ingredient Resources
 @class_cache
 class IngredientListResource(Resource, ResourceMixin):
-    
+    """
+    Resource for handling operations on the list of ingredient items.
+    """
+
     @swag_from({
         'tags': ['Ingredient'],
         'description': 'Get all ingredient items',
@@ -51,11 +54,22 @@ class IngredientListResource(Resource, ResourceMixin):
     })
     def get(self):
         """
-        Handle GET requests to retrieve all ingredient items.
-        :return: A JSON response containing a list of serialized ingredient objects,
-                 or an error message.
+        Handle GET requests to retrieve all ingredient items with hypermedia.
         """
-        return self.handle_get_all(get_all_ingredients)
+        ingredients = get_all_ingredients()
+        body = FoodManagerBuilder(ingredients=[])
+        body.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        body.add_control("self", url_for("api.ingredientlistresource"))
+        body.add_control_profile()
+        body.add_control_add_ingredient()
+
+        for item in ingredients:
+            entry = FoodManagerBuilder(item.serialize())
+            entry.add_control("self", url_for("api.ingredientresource", ingredient_id=item.ingredient_id))
+            entry.add_control("profile", f"{LINK_RELATIONS_URL}/ingredient")
+            body["ingredients"].append(entry)
+
+        return Response(json.dumps(body), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Ingredient'],
@@ -104,15 +118,23 @@ class IngredientListResource(Resource, ResourceMixin):
     })
     def post(self):
         """
-        Handle POST requests to create a new ingredient.
-        :return: A JSON response with the serialized newly created ingredient object,
-                 or an error message.
+        Handle POST requests to create a new ingredient with hypermedia.
         """
-        return self.handle_create(create_ingredient, request.get_json())
+        data = request.get_json()
+        ingredient = create_ingredient(data)
+        builder = FoodManagerBuilder(ingredient.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        builder.add_control("self", url_for("api.ingredientresource", ingredient_id=ingredient.ingredient_id))
+        builder.add_control_profile()
+        builder.add_control_all_ingredients()
+        return Response(json.dumps(builder), 201, mimetype=MASON)
 
 
 @class_cache
 class IngredientResource(Resource, ResourceMixin):
+    """
+    Resource for handling operations on a single ingredient item.
+    """
 
     @swag_from({
         'tags': ['Ingredient'],
@@ -152,12 +174,26 @@ class IngredientResource(Resource, ResourceMixin):
     })
     def get(self, ingredient_id):
         """
-        Handle GET requests to retrieve a specific ingredient by its ID.
-        :param ingredient_id: The ID of the ingredient to retrieve.
-        :return: A JSON response with the serialized ingredient object, or an error
-                 message if not found.
+        Handle GET requests to retrieve a specific ingredient by its ID with hypermedia.
         """
-        return self.handle_get_by_id(get_ingredient_by_id, ingredient_id)
+        ingredient = get_ingredient_by_id(ingredient_id)
+        if not ingredient:
+            builder = FoodManagerBuilder()
+            builder.add_error("Ingredient not found", f"No ingredient with ID {ingredient_id} exists.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
+
+        builder = FoodManagerBuilder(ingredient.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        self_url = url_for("api.ingredientresource", ingredient_id=ingredient_id)
+        builder.add_control("self", self_url)
+        builder.add_control("profile", f"{LINK_RELATIONS_URL}/ingredient")
+        builder.add_control("collection", url_for("api.ingredientlistresource"))
+        builder.add_control_put("Edit this ingredient", self_url, {
+            "name": "string",
+            "image_url": "string"
+        })
+        builder.add_control_delete("Delete this ingredient", self_url)
+        return Response(json.dumps(builder), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Ingredient'],
@@ -212,12 +248,21 @@ class IngredientResource(Resource, ResourceMixin):
     })
     def put(self, ingredient_id):
         """
-        Handle PUT requests to update an existing ingredient.
-        :param ingredient_id: The ID of the ingredient to update.
-        :return: A JSON response with the serialized updated ingredient object,
-                 or an error message.
+        Handle PUT requests to update an existing ingredient with hypermedia.
         """
-        return self.handle_update(update_ingredient, ingredient_id)
+        data = request.get_json()
+        updated = update_ingredient(ingredient_id, data)
+        if not updated:
+            builder = FoodManagerBuilder()
+            builder.add_error("Ingredient not found", f"No ingredient with ID {ingredient_id} exists to update.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
+
+        builder = FoodManagerBuilder(updated.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        builder.add_control("self", url_for("api.ingredientresource", ingredient_id=ingredient_id))
+        builder.add_control("profile", f"{LINK_RELATIONS_URL}/ingredient")
+        builder.add_control("collection", url_for("api.ingredientlistresource"))
+        return Response(json.dumps(builder), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Ingredient'],
@@ -245,9 +290,12 @@ class IngredientResource(Resource, ResourceMixin):
     })
     def delete(self, ingredient_id):
         """
-        Handle DELETE requests to remove a specific ingredient by its ID.
-        :param ingredient_id: The ID of the ingredient to delete.
-        :return: A response with HTTP status code 204 (No Content) if deletion is
-                 successful, or an error message.
+        Handle DELETE requests to remove a specific ingredient by its ID with hypermedia.
         """
-        return self.handle_delete(delete_ingredient, ingredient_id)
+        success = delete_ingredient(ingredient_id)
+        if not success:
+            builder = FoodManagerBuilder()
+            builder.add_error("Ingredient not found", f"No ingredient with ID {ingredient_id} exists to delete.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
+
+        return Response(status=204)

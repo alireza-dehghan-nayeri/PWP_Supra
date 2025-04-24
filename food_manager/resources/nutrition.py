@@ -1,11 +1,12 @@
 """
-Module for Nutritional Information API endpoints.
+Nutrition API Resource Module with Hypermedia (MASON) Support
 
-This module defines resources for handling nutritional information items.
-It supports GET (list and detail), POST, PUT, and DELETE operations.
+Provides RESTful endpoints for listing, creating, retrieving, updating,
+and deleting nutritional information items, enriched with MASON hypermedia controls.
 """
 
-from flask import Response, json, request
+import json
+from flask import request, url_for, Response
 from flask_restful import Resource
 from flasgger import swag_from
 
@@ -15,15 +16,14 @@ from food_manager.db_operations import (
 )
 from food_manager.utils.reponses import ResourceMixin
 from food_manager.utils.cache import class_cache
+from food_manager.constants import MASON, NAMESPACE, LINK_RELATIONS_URL
+from food_manager.builder import FoodManagerBuilder
 
 
-# NutritionalInfo Resources
 @class_cache
 class NutritionalInfoListResource(Resource, ResourceMixin):
     """
     Resource for handling operations on the list of nutritional information items.
-    This includes retrieving all nutritional info items (GET) and creating a new 
-    nutritional info item (POST).
     """
 
     @swag_from({
@@ -52,11 +52,22 @@ class NutritionalInfoListResource(Resource, ResourceMixin):
     })
     def get(self):
         """
-        Handle GET requests to retrieve all nutritional information items.
-        :return: A JSON response containing a list of serialized nutritional info
-                 objects with HTTP status code 200.
+        Handle GET requests to retrieve all nutritional information items with hypermedia.
         """
-        return self.handle_get_all(get_all_nutritions)
+        nutritions = get_all_nutritions()
+        body = FoodManagerBuilder(nutritions=[])
+        body.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        body.add_control("self", url_for("api.nutritioninfolistresource"))
+        body.add_control_profile()
+        body.add_control_add_nutritional_info()
+
+        for item in nutritions:
+            entry = FoodManagerBuilder(item.serialize())
+            entry.add_control("self", url_for("api.nutritioninforesource", nutritional_info_id=item.nutritional_info_id))
+            entry.add_control("profile", f"{LINK_RELATIONS_URL}/nutrition")
+            body["nutritions"].append(entry)
+
+        return Response(json.dumps(body), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Nutrition'],
@@ -69,34 +80,11 @@ class NutritionalInfoListResource(Resource, ResourceMixin):
                 'schema': {
                     'type': 'object',
                     'properties': {
-                        'recipe_id': {
-                            'type': 'integer',
-                            'example': 1,
-                            'description': 'ID of the associated recipe'
-                        },
-                        'calories': {
-                            'type': 'integer',
-                            'example': 500,
-                            'description': 'Number of calories'
-                        },
-                        'protein': {
-                            'type': 'number',
-                            'format': 'float',
-                            'example': 20.5,
-                            'description': 'Amount of protein in grams'
-                        },
-                        'carbs': {
-                            'type': 'number',
-                            'format': 'float',
-                            'example': 60.2,
-                            'description': 'Amount of carbohydrates in grams'
-                        },
-                        'fat': {
-                            'type': 'number',
-                            'format': 'float',
-                            'example': 15.3,
-                            'description': 'Amount of fat in grams'
-                        }
+                        'recipe_id': {'type': 'integer', 'example': 1},
+                        'calories': {'type': 'integer', 'example': 500},
+                        'protein': {'type': 'number', 'format': 'float', 'example': 20.5},
+                        'carbs': {'type': 'number', 'format': 'float', 'example': 60.2},
+                        'fat': {'type': 'number', 'format': 'float', 'example': 15.3}
                     },
                     'required': ['recipe_id', 'calories', 'protein', 'carbs', 'fat']
                 }
@@ -116,28 +104,28 @@ class NutritionalInfoListResource(Resource, ResourceMixin):
                     }
                 }
             },
-            400: {
-                'description': 'Invalid input or missing required fields'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
+            400: {'description': 'Invalid input'},
+            500: {'description': 'Internal server error'}
         }
     })
     def post(self):
         """
-        Handle POST requests to create a new nutritional information item.
-        :return: A JSON response with the serialized new nutritional info object or 
-                 an error message if creation fails.
+        Handle POST requests to create a new nutritional information item with hypermedia.
         """
-        return self.handle_create(create_nutritional_info, request.get_json())
+        data = request.get_json()
+        nutrition = create_nutritional_info(data)
+        builder = FoodManagerBuilder(nutrition.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        builder.add_control("self", url_for("api.nutritioninforesource", nutritional_info_id=nutrition.nutritional_info_id))
+        builder.add_control_profile()
+        builder.add_control_all_nutritional_info()
+        return Response(json.dumps(builder), 201, mimetype=MASON)
 
 
 @class_cache
 class NutritionalInfoResource(Resource, ResourceMixin):
     """
     Resource for handling operations on a single nutritional information item.
-    This includes retrieving, updating, and deleting a nutritional info item by its ID.
     """
 
     @swag_from({
@@ -148,8 +136,7 @@ class NutritionalInfoResource(Resource, ResourceMixin):
                 'name': 'nutritional_info_id',
                 'in': 'path',
                 'type': 'integer',
-                'required': True,
-                'description': 'ID of the nutritional information to retrieve'
+                'required': True
             }
         ],
         'responses': {
@@ -167,12 +154,7 @@ class NutritionalInfoResource(Resource, ResourceMixin):
                 }
             },
             404: {
-                'description': 'Nutritional information not found',
-                'examples': {
-                    'application/json': {
-                        'error': 'Nutritional info not found'
-                    }
-                }
+                'description': 'Nutritional information not found'
             },
             500: {
                 'description': 'Internal server error'
@@ -181,12 +163,28 @@ class NutritionalInfoResource(Resource, ResourceMixin):
     })
     def get(self, nutritional_info_id):
         """
-        Handle GET requests to retrieve a specific nutritional info item by its ID.
-        :param nutritional_info_id: The unique identifier of the nutritional info item.
-        :return: A JSON response with the serialized nutritional info object if found,
-                 or an error message with HTTP status code 404 if not found.
+        Handle GET requests to retrieve a specific nutritional info item by ID with hypermedia.
         """
-        return self.handle_get_by_id(get_nutritional_info_by_id, nutritional_info_id)
+        nutrition = get_nutritional_info_by_id(nutritional_info_id)
+        if not nutrition:
+            builder = FoodManagerBuilder()
+            builder.add_error("Nutrition info not found", f"No item with ID {nutritional_info_id} exists.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
+
+        builder = FoodManagerBuilder(nutrition.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        self_url = url_for("api.nutritioninforesource", nutritional_info_id=nutritional_info_id)
+        builder.add_control("self", self_url)
+        builder.add_control("profile", f"{LINK_RELATIONS_URL}/nutrition")
+        builder.add_control("collection", url_for("api.nutritioninfolistresource"))
+        builder.add_control_put("Edit this nutrition info", self_url, {
+            "calories": "integer",
+            "protein": "float",
+            "carbs": "float",
+            "fat": "float"
+        })
+        builder.add_control_delete("Delete this nutrition info", self_url)
+        return Response(json.dumps(builder), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Nutrition'],
@@ -196,8 +194,7 @@ class NutritionalInfoResource(Resource, ResourceMixin):
                 'name': 'nutritional_info_id',
                 'in': 'path',
                 'type': 'integer',
-                'required': True,
-                'description': 'ID of the nutritional information to update'
+                'required': True
             },
             {
                 'in': 'body',
@@ -206,63 +203,36 @@ class NutritionalInfoResource(Resource, ResourceMixin):
                 'schema': {
                     'type': 'object',
                     'properties': {
-                        'calories': {
-                            'type': 'integer',
-                            'example': 450,
-                            'description': 'Updated number of calories'
-                        },
-                        'protein': {
-                            'type': 'number',
-                            'format': 'float',
-                            'example': 18.0,
-                            'description': 'Updated amount of protein in grams'
-                        },
-                        'carbs': {
-                            'type': 'number',
-                            'format': 'float',
-                            'example': 55.0,
-                            'description': 'Updated amount of carbohydrates in grams'
-                        },
-                        'fat': {
-                            'type': 'number',
-                            'format': 'float',
-                            'example': 12.0,
-                            'description': 'Updated amount of fat in grams'
-                        }
+                        'calories': {'type': 'integer', 'example': 450},
+                        'protein': {'type': 'number', 'format': 'float', 'example': 18.0},
+                        'carbs': {'type': 'number', 'format': 'float', 'example': 55.0},
+                        'fat': {'type': 'number', 'format': 'float', 'example': 12.0}
                     }
                 }
             }
         ],
         'responses': {
-            200: {
-                'description': 'The updated nutritional information',
-                'examples': {
-                    'application/json': {
-                        "nutritional_info_id": 1,
-                        "recipe_id": 1,
-                        "calories": 450,
-                        "protein": 18.0,
-                        "carbs": 55.0,
-                        "fat": 12.0
-                    }
-                }
-            },
-            404: {
-                'description': 'Nutritional information not found'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
+            200: {'description': 'Updated nutritional info'},
+            404: {'description': 'Nutritional info not found'}
         }
     })
     def put(self, nutritional_info_id):
         """
-        Handle PUT requests to update an existing nutritional info item.
-        :param nutritional_info_id: The unique identifier of the nutritional info item to update.
-        :return: A JSON response with the serialized updated nutritional info object,
-                 or an error message if the update fails.
+        Handle PUT requests to update an existing nutritional info item with hypermedia.
         """
-        return self.handle_update(update_nutritional_info, nutritional_info_id)
+        data = request.get_json()
+        updated = update_nutritional_info(nutritional_info_id, data)
+        if not updated:
+            builder = FoodManagerBuilder()
+            builder.add_error("Nutrition info not found", f"No item with ID {nutritional_info_id} exists to update.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
+
+        builder = FoodManagerBuilder(updated.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        builder.add_control("self", url_for("api.nutritioninforesource", nutritional_info_id=nutritional_info_id))
+        builder.add_control("profile", f"{LINK_RELATIONS_URL}/nutrition")
+        builder.add_control("collection", url_for("api.nutritioninfolistresource"))
+        return Response(json.dumps(builder), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Nutrition'],
@@ -272,27 +242,22 @@ class NutritionalInfoResource(Resource, ResourceMixin):
                 'name': 'nutritional_info_id',
                 'in': 'path',
                 'type': 'integer',
-                'required': True,
-                'description': 'ID of the nutritional information to delete'
+                'required': True
             }
         ],
         'responses': {
-            204: {
-                'description': 'Nutritional information deleted successfully'
-            },
-            404: {
-                'description': 'Nutritional information not found'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
+            204: {'description': 'Deleted'},
+            404: {'description': 'Not found'}
         }
     })
     def delete(self, nutritional_info_id):
         """
-        Handle DELETE requests to remove a specific nutritional info item by its ID.
-        :param nutritional_info_id: The unique identifier of the nutritional info item to delete.
-        :return: A response with HTTP status code 204 (No Content) if deletion is successful,
-                 or an error message if deletion fails.
+        Handle DELETE requests to remove a specific nutritional info item by its ID with hypermedia.
         """
-        return self.handle_delete(delete_nutritional_info, nutritional_info_id)
+        success = delete_nutritional_info(nutritional_info_id)
+        if not success:
+            builder = FoodManagerBuilder()
+            builder.add_error("Nutrition info not found", f"No item with ID {nutritional_info_id} exists to delete.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
+
+        return Response(status=204)
