@@ -1,4 +1,9 @@
-# file: food.py
+"""
+Food API Resource Module with Hypermedia (MASON) Support
+
+Provides RESTful endpoints for listing, creating, retrieving, updating,
+and deleting food items, enriched with MASON hypermedia controls.
+"""
 
 import json
 from flask import request, url_for, Response
