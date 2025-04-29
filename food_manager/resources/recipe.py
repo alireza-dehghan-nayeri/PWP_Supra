@@ -4,7 +4,7 @@ Module for Recipe API endpoints.
 This module defines resources for handling recipes and their associations.
 """
 
-from flask import Response, request
+from flask import Response, request, url_for
 import json
 from flask_restful import Resource
 from flasgger import swag_from
@@ -15,9 +15,10 @@ from food_manager.db_operations import (
 )
 from food_manager.utils.reponses import ResourceMixin, internal_server_error
 from food_manager.utils.cache import class_cache
+from food_manager.builder import FoodManagerBuilder
+from food_manager.constants import MASON, NAMESPACE, LINK_RELATIONS_URL
 
 
-# Recipe Resources
 @class_cache
 class RecipeListResource(Resource, ResourceMixin):
     """
@@ -82,12 +83,18 @@ class RecipeListResource(Resource, ResourceMixin):
         }
     })
     def get(self):
-        """
-        Handle GET requests to retrieve all recipes.
-        :return: A JSON response containing a list of serialized recipe objects
-                 with HTTP status code 200.
-        """
-        return self.handle_get_all(get_all_recipes)
+        recipes = get_all_recipes()
+        builder = FoodManagerBuilder(recipes=[])
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        builder.add_control("self", url_for("api.recipelistresource"))
+        builder.add_control_profile()
+
+        for recipe in recipes:
+            item = FoodManagerBuilder(recipe.serialize())
+            item.add_control("self", url_for("api.reciperesource", recipe_id=recipe.recipe_id))
+            builder["recipes"].append(item)
+
+        return Response(json.dumps(builder), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Recipe'],
@@ -100,31 +107,11 @@ class RecipeListResource(Resource, ResourceMixin):
                 'schema': {
                     'type': 'object',
                     'properties': {
-                        'food_id': {
-                            'type': 'integer',
-                            'example': 1,
-                            'description': 'ID of the associated food item'
-                        },
-                        'instruction': {
-                            'type': 'string',
-                            'example': 'Mix ingredients and bake',
-                            'description': 'Cooking instructions'
-                        },
-                        'prep_time': {
-                            'type': 'integer',
-                            'example': 30,
-                            'description': 'Preparation time in minutes'
-                        },
-                        'cook_time': {
-                            'type': 'integer',
-                            'example': 45,
-                            'description': 'Cooking time in minutes'
-                        },
-                        'servings': {
-                            'type': 'integer',
-                            'example': 4,
-                            'description': 'Number of servings'
-                        }
+                        'food_id': {'type': 'integer', 'example': 1},
+                        'instruction': {'type': 'string', 'example': 'Mix ingredients and bake'},
+                        'prep_time': {'type': 'integer', 'example': 30},
+                        'cook_time': {'type': 'integer', 'example': 45},
+                        'servings': {'type': 'integer', 'example': 4}
                     },
                     'required': ['food_id', 'instruction', 'prep_time', 'cook_time', 'servings']
                 }
@@ -144,21 +131,19 @@ class RecipeListResource(Resource, ResourceMixin):
                     }
                 }
             },
-            400: {
-                'description': 'Invalid input or missing required fields'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
+            400: {'description': 'Invalid input'},
+            500: {'description': 'Internal server error'}
         }
     })
     def post(self):
-        """
-        Handle POST requests to create a new recipe.
-        :return: A JSON response with the serialized new recipe object on success,
-                 or an error message if recipe creation fails.
-        """
-        return self.handle_create(create_recipe, request.json)
+        data = request.get_json()
+        recipe = create_recipe(data)
+        builder = FoodManagerBuilder(recipe.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        builder.add_control("self", url_for("api.reciperesource", recipe_id=recipe.recipe_id))
+        builder.add_control_profile()
+        builder.add_control("collection", url_for("api.recipelistresource"))
+        return Response(json.dumps(builder), 201, mimetype=MASON)
 
 
 @class_cache
@@ -172,93 +157,41 @@ class RecipeResource(Resource, ResourceMixin):
         'tags': ['Recipe'],
         'description': 'Get a specific recipe by ID',
         'parameters': [
-            {
-                'name': 'recipe_id',
-                'in': 'path',
-                'type': 'integer',
-                'required': True,
-                'description': 'ID of the recipe to retrieve'
-            }
+            {'name': 'recipe_id', 'in': 'path', 'type': 'integer', 'required': True}
         ],
         'responses': {
-            200: {
-                'description': 'The requested recipe with full details',
-                'examples': {
-                    'application/json': {
-                        'recipe_id': 1,
-                        'food_id': 1,
-                        'instruction': 'Mix ingredients and bake',
-                        'prep_time': 30,
-                        'cook_time': 45,
-                        'servings': 4,
-                        'food': {
-                            'food_id': 1,
-                            'name': 'Pizza',
-                            'description': 'Italian dish',
-                            'image_url': 'http://example.com/pizza.jpg'
-                        },
-                        'nutritional_info': {
-                            'nutritional_info_id': 1,
-                            'recipe_id': 1,
-                            'calories': 500,
-                            'protein': 20.5,
-                            'carbs': 60.2,
-                            'fat': 15.3
-                        },
-                        'ingredients': [
-                            {
-                                'ingredient': {
-                                    'ingredient_id': 1,
-                                    'name': 'Flour',
-                                    'image_url': 'http://example.com/flour.jpg'
-                                },
-                                'quantity': 2.5,
-                                'unit': 'cups'
-                            }
-                        ],
-                        'categories': [
-                            {
-                                'category_id': 1,
-                                'name': 'Italian',
-                                'description': 'Italian cuisine'
-                            }
-                        ]
-                    }
-                }
-            },
-            404: {
-                'description': 'Recipe not found',
-                'examples': {
-                    'application/json': {
-                        'error': 'Recipe not found'
-                    }
-                }
-            },
-            500: {
-                'description': 'Internal server error'
-            }
+            200: {'description': 'The requested recipe with full details'},
+            404: {'description': 'Recipe not found'}
         }
     })
     def get(self, recipe_id):
-        """
-        Handle GET requests to retrieve a specific recipe by its recipe_id.
-        :param recipe_id: The unique identifier of the recipe.
-        :return: A JSON response with the serialized recipe object if found,
-                 or an error message with status code 404 if not found.
-        """
-        return self.handle_get_by_id(get_recipe_by_id, recipe_id)
+        recipe = get_recipe_by_id(recipe_id)
+        if not recipe:
+            builder = FoodManagerBuilder()
+            builder.add_error("Recipe not found", f"No recipe with ID {recipe_id} exists.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
+
+        builder = FoodManagerBuilder(recipe.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        self_url = url_for("api.reciperesource", recipe_id=recipe_id)
+        builder.add_control("self", self_url)
+        builder.add_control("collection", url_for("api.recipelistresource"))
+        builder.add_control_profile()
+        builder.add_control_put("Edit this recipe", self_url, {
+            "food_id": "integer",
+            "instruction": "string",
+            "prep_time": "integer",
+            "cook_time": "integer",
+            "servings": "integer"
+        })
+        builder.add_control_delete("Delete this recipe", self_url)
+        return Response(json.dumps(builder), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Recipe'],
         'description': 'Update an existing recipe',
         'parameters': [
-            {
-                'name': 'recipe_id',
-                'in': 'path',
-                'type': 'integer',
-                'required': True,
-                'description': 'ID of the recipe to update'
-            },
+            {'name': 'recipe_id', 'in': 'path', 'type': 'integer', 'required': True},
             {
                 'in': 'body',
                 'name': 'body',
@@ -266,99 +199,55 @@ class RecipeResource(Resource, ResourceMixin):
                 'schema': {
                     'type': 'object',
                     'properties': {
-                        'food_id': {
-                            'type': 'integer',
-                            'example': 1,
-                            'description': 'Updated food ID'
-                        },
-                        'instruction': {
-                            'type': 'string',
-                            'example': 'Updated instructions',
-                            'description': 'Updated cooking instructions'
-                        },
-                        'prep_time': {
-                            'type': 'integer',
-                            'example': 20,
-                            'description': 'Updated preparation time in minutes'
-                        },
-                        'cook_time': {
-                            'type': 'integer',
-                            'example': 40,
-                            'description': 'Updated cooking time in minutes'
-                        },
-                        'servings': {
-                            'type': 'integer',
-                            'example': 6,
-                            'description': 'Updated number of servings'
-                        }
+                        'food_id': {'type': 'integer', 'example': 1},
+                        'instruction': {'type': 'string', 'example': 'Updated instructions'},
+                        'prep_time': {'type': 'integer', 'example': 20},
+                        'cook_time': {'type': 'integer', 'example': 40},
+                        'servings': {'type': 'integer', 'example': 6}
                     }
                 }
             }
         ],
         'responses': {
-            200: {
-                'description': 'The updated recipe',
-                'examples': {
-                    'application/json': {
-                        'recipe_id': 1,
-                        'food_id': 1,
-                        'instruction': 'Updated instructions',
-                        'prep_time': 20,
-                        'cook_time': 40,
-                        'servings': 6
-                    }
-                }
-            },
-            404: {
-                'description': 'Recipe not found'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
+            200: {'description': 'The updated recipe'},
+            404: {'description': 'Recipe not found'}
         }
     })
     def put(self, recipe_id):
-        """
-        Handle PUT requests to update an existing recipe.
-        :param recipe_id: The unique identifier of the recipe to update.
-        :return: A JSON response with the serialized updated recipe object,
-                 or an error message if the update fails.
-        """
-        return self.handle_update(update_recipe, recipe_id, request.get_json())
+        data = request.get_json()
+        updated = update_recipe(recipe_id, data)
+        if not updated:
+            builder = FoodManagerBuilder()
+            builder.add_error("Recipe not found", f"No recipe with ID {recipe_id} exists to update.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
+
+        builder = FoodManagerBuilder(updated.serialize())
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        builder.add_control("self", url_for("api.reciperesource", recipe_id=recipe_id))
+        builder.add_control("collection", url_for("api.recipelistresource"))
+        builder.add_control_profile()
+        return Response(json.dumps(builder), 200, mimetype=MASON)
 
     @swag_from({
         'tags': ['Recipe'],
         'description': 'Delete a specific recipe',
         'parameters': [
-            {
-                'name': 'recipe_id',
-                'in': 'path',
-                'type': 'integer',
-                'required': True,
-                'description': 'ID of the recipe to delete'
-            }
+            {'name': 'recipe_id', 'in': 'path', 'type': 'integer', 'required': True}
         ],
         'responses': {
-            204: {
-                'description': 'Recipe deleted successfully'
-            },
-            404: {
-                'description': 'Recipe not found'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
+            204: {'description': 'Recipe deleted successfully'},
+            404: {'description': 'Recipe not found'}
         }
     })
     def delete(self, recipe_id):
-        """
-        Handle DELETE requests to remove a specific recipe by its recipe_id.
-        :param recipe_id: The unique identifier of the recipe to delete.
-        :return: An empty response with status code 204 (No Content) on successful deletion,
-                 or an error message if deletion fails.
-        """
-        return self.handle_delete(delete_recipe, recipe_id)
+        success = delete_recipe(recipe_id)
+        if not success:
+            builder = FoodManagerBuilder()
+            builder.add_error("Recipe not found", f"No recipe with ID {recipe_id} exists to delete.")
+            return Response(json.dumps(builder), 404, mimetype=MASON)
 
+        return Response(status=204)
+    
 
 # Recipe-Ingredient Resource
 @class_cache
@@ -445,22 +334,16 @@ class RecipeIngredientResource(Resource):
         unit = data.get("unit", "piece")
 
         if not ingredient_id or not quantity:
-            return Response(
-                json.dumps({"error": "ingredient_id and quantity are required."}),
-                400,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder()
+            builder.add_error("Missing fields", "ingredient_id and quantity are required.")
+            return Response(json.dumps(builder), 400, mimetype=MASON)
 
         try:
             add_ingredient_to_recipe(recipe_id, ingredient_id, quantity, unit)
-            return Response(
-                json.dumps({
-                    "message": "Ingredient added successfully!",
-                    "recipe_id": recipe_id
-                }),
-                201,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder({"message": "Ingredient added successfully!", "recipe_id": recipe_id})
+            builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+            builder.add_control("self", url_for("api.recipeingredientresource", recipe_id=recipe_id))
+            return Response(json.dumps(builder), 201, mimetype=MASON)
         except Exception as e:
             return internal_server_error(e)
 
@@ -518,16 +401,15 @@ class RecipeIngredientResource(Resource):
         """
         recipe = get_recipe_by_id(recipe_id)
         if recipe:
-            return Response(
-                json.dumps(recipe.serialize()),
-                200,
-                mimetype="application/json"
-            )
-        return Response(
-            json.dumps({"error": "Recipe not found"}),
-            404,
-            mimetype="application/json"
-        )
+            builder = FoodManagerBuilder(recipe.serialize())
+            builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+            builder.add_control("self", url_for("api.recipeingredientresource", recipe_id=recipe_id))
+            builder.add_control("recipe", url_for("api.reciperesource", recipe_id=recipe_id))
+            return Response(json.dumps(builder), 200, mimetype=MASON)
+
+        builder = FoodManagerBuilder()
+        builder.add_error("Recipe not found", f"No recipe with ID {recipe_id} exists.")
+        return Response(json.dumps(builder), 404, mimetype=MASON)
 
     @swag_from({
         'tags': ['Recipe'],
@@ -602,22 +484,16 @@ class RecipeIngredientResource(Resource):
         unit = data.get("unit")
 
         if not ingredient_id:
-            return Response(
-                json.dumps({"error": "ingredient_id is required."}),
-                400,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder()
+            builder.add_error("Missing field", "ingredient_id is required.")
+            return Response(json.dumps(builder), 400, mimetype=MASON)
 
         try:
             update_recipe_ingredient(recipe_id, ingredient_id, quantity, unit)
-            return Response(
-                json.dumps({
-                    "message": "Ingredient updated successfully!",
-                    "recipe_id": recipe_id
-                }),
-                200,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder({"message": "Ingredient updated successfully!", "recipe_id": recipe_id})
+            builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+            builder.add_control("self", url_for("api.recipeingredientresource", recipe_id=recipe_id))
+            return Response(json.dumps(builder), 200, mimetype=MASON)
         except Exception as e:
             return internal_server_error(e)
 
@@ -682,22 +558,16 @@ class RecipeIngredientResource(Resource):
         ingredient_id = data.get("ingredient_id")
 
         if not ingredient_id:
-            return Response(
-                json.dumps({"error": "ingredient_id is required."}),
-                400,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder()
+            builder.add_error("Missing field", "ingredient_id is required.")
+            return Response(json.dumps(builder), 400, mimetype=MASON)
 
         try:
             remove_ingredient_from_recipe(recipe_id, ingredient_id)
-            return Response(
-                json.dumps({
-                    "message": "Ingredient removed successfully!",
-                    "recipe_id": recipe_id
-                }),
-                200,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder({"message": "Ingredient removed successfully!", "recipe_id": recipe_id})
+            builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+            builder.add_control("self", url_for("api.recipeingredientresource", recipe_id=recipe_id))
+            return Response(json.dumps(builder), 200, mimetype=MASON)
         except Exception as e:
             return internal_server_error(e)
 
@@ -769,22 +639,16 @@ class RecipeCategoryResource(Resource):
         category_id = data.get("category_id")
 
         if not category_id:
-            return Response(
-                json.dumps({"error": "category_id is required."}),
-                400,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder()
+            builder.add_error("Missing field", "category_id is required.")
+            return Response(json.dumps(builder), 400, mimetype=MASON)
 
         try:
             add_category_to_recipe(recipe_id, category_id)
-            return Response(
-                json.dumps({
-                    "message": "Category added successfully!",
-                    "recipe_id": recipe_id
-                }),
-                201,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder({"message": "Category added successfully!", "recipe_id": recipe_id})
+            builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+            builder.add_control("self", url_for("api.recipecategoryresource", recipe_id=recipe_id))
+            return Response(json.dumps(builder), 201, mimetype=MASON)
         except Exception as e:
             return internal_server_error(e)
 
@@ -838,16 +702,15 @@ class RecipeCategoryResource(Resource):
         """
         recipe = get_recipe_by_id(recipe_id)
         if recipe:
-            return Response(
-                json.dumps(recipe.serialize()),
-                200,
-                mimetype="application/json"
-            )
-        return Response(
-            json.dumps({"error": "Recipe not found"}),
-            404,
-            mimetype="application/json"
-        )
+            builder = FoodManagerBuilder(recipe.serialize())
+            builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+            builder.add_control("self", url_for("api.recipecategoryresource", recipe_id=recipe_id))
+            builder.add_control("recipe", url_for("api.reciperesource", recipe_id=recipe_id))
+            return Response(json.dumps(builder), 200, mimetype=MASON)
+
+        builder = FoodManagerBuilder()
+        builder.add_error("Recipe not found", f"No recipe with ID {recipe_id} exists.")
+        return Response(json.dumps(builder), 404, mimetype=MASON)
 
     @swag_from({
         'tags': ['Recipe'],
@@ -910,21 +773,16 @@ class RecipeCategoryResource(Resource):
         category_id = data.get("category_id")
 
         if not category_id:
-            return Response(
-                json.dumps({"error": "category_id is required."}),
-                400,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder()
+            builder.add_error("Missing field", "category_id is required.")
+            return Response(json.dumps(builder), 400, mimetype=MASON)
 
         try:
             remove_category_from_recipe(recipe_id, category_id)
-            return Response(
-                json.dumps({
-                    "message": "Category removed successfully!",
-                    "recipe_id": recipe_id
-                }),
-                200,
-                mimetype="application/json"
-            )
+            builder = FoodManagerBuilder({"message": "Category removed successfully!", "recipe_id": recipe_id})
+            builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+            builder.add_control("self", url_for("api.recipecategoryresource", recipe_id=recipe_id))
+            return Response(json.dumps(builder), 200, mimetype=MASON)
         except Exception as e:
             return internal_server_error(e)
+
