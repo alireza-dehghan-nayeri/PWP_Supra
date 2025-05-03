@@ -1,7 +1,7 @@
 """
 Module for Ingredient API endpoints.
 
-This module defines resources for handling ingredients including retrieving,
+This module defines resources for handling ingredients, including retrieving,
 creating, updating, and deleting them.
 """
 

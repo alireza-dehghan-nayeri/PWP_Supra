@@ -5,11 +5,11 @@ This module defines resources for handling nutritional information items.
 It supports GET (list and detail), POST, PUT, and DELETE operations.
 """
 
-from flask import Response, json, request
+from flask import request
 from flask_restful import Resource
 
 from food_manager.db_operations import (
-    create_nutritional_info, get_all_nutritions, get_nutritional_info_by_id,
+    create_nutritional_info, get_all_nutrition, get_nutritional_info_by_id,
     update_nutritional_info, delete_nutritional_info
 )
 from food_manager.utils.reponses import ResourceMixin
@@ -32,7 +32,7 @@ class NutritionalInfoListResource(Resource, ResourceMixin):
         :return: A JSON response containing a list of serialized nutritional info
                  objects with HTTP status code 200.
         """
-        return self.handle_get_all(get_all_nutritions)
+        return self.handle_get_all(get_all_nutrition)
 
 
     def post(self):

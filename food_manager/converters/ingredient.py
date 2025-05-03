@@ -1,7 +1,7 @@
 """Custom URL converter for Ingredient objects.
 
 This module defines an IngredientConverter that converts URL parameters into
-ingredient IDs for querying, and converts Ingredient objects back into URL-safe strings.
+ingredient IDs for querying and converts Ingredient objects back into URL-safe strings.
 """
 
 from werkzeug.routing import BaseConverter, ValidationError
@@ -27,7 +27,7 @@ class IngredientConverter(BaseConverter):
         """
         Convert the URL parameter to an integer ingredient ID.
 
-        This method is called by Flask when processing a URL. It attempts to convert
+        Flask calls this method when processing a URL. It attempts to convert
         the given value to an integer. If the conversion fails, a ValidationError is raised.
 
         :param value: The string value from the URL.

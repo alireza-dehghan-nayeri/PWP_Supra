@@ -4,7 +4,7 @@ This module defines a Flask blueprint for the RESTful API endpoints and maps eac
 endpoint to its corresponding resource class.
 """
 
-# Import necessary modules for creating a blueprint and RESTful API.
+# Import the necessary modules for creating a blueprint and RESTful API.
 from flask import Blueprint
 from flask_restful import Api
 from food_manager.resources.category import CategoryListResource, CategoryResource

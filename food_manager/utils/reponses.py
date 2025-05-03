@@ -87,7 +87,7 @@ class ResourceMixin:
         
         :param get_by_id_func: Function to retrieve item by ID
         :param item_id: ID of the item to retrieve
-        :param not_found_message: Custom message when item is not found
+        :param not_found_message: a Custom message when the item is not found
         :return: JSON response with serialized item or error
         """
         try:
@@ -124,7 +124,7 @@ class ResourceMixin:
         
         :param update_func: Function to update item
         :param item_id: ID of the item to update
-        :param data: Request data (if None, will be extracted from request)
+        :param data: Request data (if None will be extracted from request)
         :return: JSON response with updated item
         """
         if data is None:

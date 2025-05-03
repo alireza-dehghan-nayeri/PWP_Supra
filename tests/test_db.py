@@ -288,7 +288,7 @@ class TestDBOperations:
         recipe2 = ops.create_recipe(food.food_id, "No-bake", 5, 0, 1)
         ops.create_nutritional_info(recipe1.recipe_id, 300, 10, 30, 15)
         ops.create_nutritional_info(recipe2.recipe_id, 250, 8, 25, 12)
-        results = ops.get_all_nutritions()
+        results = ops.get_all_nutrition()
         assert isinstance(results, list)
         assert len(results) >= 2
 

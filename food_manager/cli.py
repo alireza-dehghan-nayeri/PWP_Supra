@@ -180,7 +180,7 @@ def sample_data_command():
 
         # Create recipes with all related data
         for recipe_data in recipes_data:
-            # Create base recipe
+            # Create a base recipe
             recipe = create_recipe(
                 food_id=recipe_data['food'].food_id,
                 instruction=recipe_data['instruction'],

@@ -27,7 +27,7 @@ class FoodConverter(BaseConverter):
         """
         Convert the URL parameter to an integer food ID.
 
-        This method is called by Flask when processing a URL. It attempts to
+        Flask calls this method when processing a URL. It attempts to
         convert the given value to an integer. If the conversion fails, a
         ValidationError is raised.
 

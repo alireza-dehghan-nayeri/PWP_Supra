@@ -27,7 +27,7 @@ class NutritionalInfoConverter(BaseConverter):
         """
         Convert the URL parameter to an integer nutritional_info ID.
 
-        This method is invoked by Flask when processing a URL. It attempts to convert the
+        Flask invokes this method when processing a URL. It attempts to convert the
         provided string value into an integer. If conversion fails, a ValidationError is raised.
 
         :param value: The string value from the URL.

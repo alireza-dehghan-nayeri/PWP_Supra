@@ -6,7 +6,8 @@ retrieving all categories and creating, updating, and deleting a single
 category.
 """
 
-from flask_restful import Resource, request
+from flask_restful import Resource
+from flask import request
 from food_manager.db_operations import (
     create_category, get_category_by_id, get_all_categories, update_category,
     delete_category
@@ -42,7 +43,7 @@ class CategoryListResource(Resource, ResourceMixin):
 @class_cache
 class CategoryResource(Resource, ResourceMixin):
     """
-    Resource for handling operations on a single category.
+    Resource for handling operations in a single category.
     This includes retrieving, updating, and deleting a category by its ID.
     """
 

@@ -1,11 +1,10 @@
 """
 Module for Food API endpoints.
 
-This module defines resources for handling food items including
+This module defines resources for handling food items, including
 retrieving, creating, updating, and deleting them.
 """
 
-import json
 from flask import request
 from flask_restful import Resource
 

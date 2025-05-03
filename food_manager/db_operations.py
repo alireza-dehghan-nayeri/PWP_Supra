@@ -331,7 +331,7 @@ def create_nutritional_info(recipe_id, calories, protein, carbs, fat):
     :param recipe_id: The ID of the associated recipe.
     :param calories: Number of calories.
     :param protein: Amount of protein.
-    :param carbs: Amount of carbohydrates.
+    :param carbs: Number of carbohydrates.
     :param fat: Amount of fat.
     :return: The created NutritionalInfo object.
     """
@@ -348,7 +348,7 @@ def create_nutritional_info(recipe_id, calories, protein, carbs, fat):
     return nutritional_info
 
 
-def get_all_nutritions():
+def get_all_nutrition():
     """
     Retrieve all nutritional information records from the database.
 
@@ -575,7 +575,7 @@ def get_recipes_by_food(food_id):
 
 def search_recipes_by_cooking_time(max_time):
     """
-    Search for recipes that have a total cooking time (prep time + cook time) 
+    Search for recipes that have a total cooking time (prep time and cook time)
     within a specified limit.
 
     :param max_time: The maximum allowed total cooking time (in minutes).
@@ -603,7 +603,7 @@ def get_low_calorie_recipes(max_calories):
     Retrieve recipes that have nutritional information with calories under a specified threshold.
 
     :param max_calories: The maximum number of calories.
-    :return: A list of Recipe objects that meet the low calorie criteria.
+    :return: A list of Recipe objects that meet the low-calorie criteria.
     """
     from food_manager.models import Recipe
     from food_manager.models import NutritionalInfo

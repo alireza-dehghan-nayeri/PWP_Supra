@@ -20,7 +20,7 @@ class CategoryConverter(BaseConverter):
         """
         Initialize the CategoryConverter.
 
-        :param map: The URL map, passed from the Flask application.
+        :param map: The URL map passed from the Flask application.
         """
         super().__init__(map)
 
@@ -28,7 +28,7 @@ class CategoryConverter(BaseConverter):
         """
         Convert the URL parameter to an integer category ID.
 
-        This method is called by Flask when a URL is matched. It attempts to
+        Flask calls this method when a URL is matched. It attempts to
         convert the value from the URL into an integer. If conversion fails,
         a ValidationError is raised.
 
