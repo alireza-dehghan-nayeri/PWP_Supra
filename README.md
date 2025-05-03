@@ -1,4 +1,4 @@
-# Food Recipe Managment API
+# Food Recipe Management API
 ## Group information
 * Student 1. Santosh Rokaya: Santosh.rokaya@student.oulu.fi
 * Student 2. Fatemeh Soufian Khakestar: Fatemeh.Soufian@student.oulu.fi
@@ -6,7 +6,7 @@
 * Student 4. Ailyah Christopher: ailyah.christopher@student.oulufi
 
 
-<!-- __Remember to include all required documentation and HOWTOs, including how to create and populate the database, how to run and test the API, the url to the entrypoint, instructions on how to setup and run the client, instructions on how to setup and run the axiliary service and instructions on how to deploy the api in a production environment__ -->
+<!-- __Remember to include all required documentation and HOWTOs, including how to create and populate the database, how to run and test the API, the url to the entrypoint, instructions on how to set up and run the client, instructions on how to set up and run the auxiliary service and instructions on how to deploy the api in a production environment__ -->
 
 ## PROJECT SETUP
 
@@ -76,9 +76,8 @@ sqlite3 food-manager.db .dump > dump.sql
 #### 📌 Run the Flask App
 ```sh
 flask --app food_manager:create_app run 
-Hit the Url with Prefix: /api/ 
-e.g http://127.0.0.1:5000/api/foods/
 ```
+Hit the Url with Prefix: /api/ e.g., http://127.0.0.1:5000/api/foods/
 
 #### 📌 Running Api Docs
 ```sh
@@ -109,7 +108,7 @@ pytest --cov=food_manager --cov-report=html
 
 ## Run PyLint Instructions
 
-#### 📌 Run PyLint for all files in food_manager directory
+#### 📌 Run PyLint for all files in the food_manager directory
 ```sh
 pylint --disable=no-member,import-outside-toplevel,no-self-use ./food_manager
 ```
