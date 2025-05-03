@@ -1,3 +1,5 @@
 food_manager/__pycache__/
 
-venv
+.venv
+.idea
+food_manager/instance
