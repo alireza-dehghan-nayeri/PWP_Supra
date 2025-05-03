@@ -1,5 +1,6 @@
 from setuptools import find_packages, setup
 
+# todo: check this and add instructions to readme!
 setup(
     name="foodmanager",
     version="0.1.0",
