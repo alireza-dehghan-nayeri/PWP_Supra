@@ -89,6 +89,8 @@ Hit the Url with Prefix: http://127.0.0.1:5000/apidocs/#/
 ```sh
 flask --app food_manager:create_app clear-db
 ```
+## Test with Postman
+The Postman collection JSON file is located under the Postman directory, which can be imported to Postman.
 
 ## Run PyTest Instructions
 
