@@ -7,7 +7,6 @@ category.
 """
 
 from flask_restful import Resource, request
-from flasgger import swag_from
 from food_manager.db_operations import (
     create_category, get_category_by_id, get_all_categories, update_category,
     delete_category
@@ -24,27 +23,6 @@ class CategoryListResource(Resource, ResourceMixin):
     This includes retrieving all categories (GET) and creating a new category (POST).
     """
 
-    @swag_from({
-        'tags': ['Category'],
-        'description': 'Get all categories',
-        'responses': {
-            200: {
-                'description': 'A list of all categories',
-                'examples': {
-                    'application/json': [
-                        {
-                            'category_id': 1,
-                            'name': 'Italian',
-                            'description': 'Italian cuisine'
-                        }
-                    ]
-                }
-            },
-            500: {
-                'description': 'Internal server error'
-            }
-        }
-    })
     def get(self):
         """
         Handle GET requests to retrieve all categories.
@@ -53,51 +31,6 @@ class CategoryListResource(Resource, ResourceMixin):
         """
         return self.handle_get_all(get_all_categories)
 
-    @swag_from({
-        'tags': ['Category'],
-        'description': 'Create a new category',
-        'parameters': [
-            {
-                'in': 'body',
-                'name': 'body',
-                'required': True,
-                'schema': {
-                    'type': 'object',
-                    'properties': {
-                        'name': {
-                            'type': 'string',
-                            'example': 'Mexican',
-                            'description': 'Name of the category'
-                        },
-                        'description': {
-                            'type': 'string',
-                            'example': 'Mexican cuisine',
-                            'description': 'Description of the category'
-                        }
-                    },
-                    'required': ['name']
-                }
-            }
-        ],
-        'responses': {
-            201: {
-                'description': 'The created category',
-                'examples': {
-                    'application/json': {
-                        'category_id': 2,
-                        'name': 'Mexican',
-                        'description': 'Mexican cuisine'
-                    }
-                }
-            },
-            400: {
-                'description': 'Invalid input or missing required fields'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
-        }
-    })
     def post(self):
         """
         Handle POST requests to create a new category.
@@ -113,42 +46,6 @@ class CategoryResource(Resource, ResourceMixin):
     This includes retrieving, updating, and deleting a category by its ID.
     """
 
-    @swag_from({
-        'tags': ['Category'],
-        'description': 'Get a specific category by ID',
-        'parameters': [
-            {
-                'name': 'category_id',
-                'in': 'path',
-                'type': 'integer',
-                'required': True,
-                'description': 'ID of the category to retrieve'
-            }
-        ],
-        'responses': {
-            200: {
-                'description': 'The requested category',
-                'examples': {
-                    'application/json': {
-                        'category_id': 1,
-                        'name': 'Italian',
-                        'description': 'Italian cuisine'
-                    }
-                }
-            },
-            404: {
-                'description': 'Category not found',
-                'examples': {
-                    'application/json': {
-                        'error': 'Category not found'
-                    }
-                }
-            },
-            500: {
-                'description': 'Internal server error'
-            }
-        }
-    })
     def get(self, category_id):
         """
         Handle GET requests to retrieve a specific category by its ID.
@@ -158,57 +55,6 @@ class CategoryResource(Resource, ResourceMixin):
         """
         return self.handle_get_by_id(get_category_by_id, category_id, "Category not found")
 
-    @swag_from({
-        'tags': ['Category'],
-        'description': 'Update an existing category',
-        'parameters': [
-            {
-                'name': 'category_id',
-                'in': 'path',
-                'type': 'integer',
-                'required': True,
-                'description': 'ID of the category to update'
-            },
-            {
-                'in': 'body',
-                'name': 'body',
-                'required': True,
-                'schema': {
-                    'type': 'object',
-                    'properties': {
-                        'name': {
-                            'type': 'string',
-                            'example': 'Updated Italian',
-                            'description': 'Updated name of the category'
-                        },
-                        'description': {
-                            'type': 'string',
-                            'example': 'Updated Italian cuisine',
-                            'description': 'Updated description of the category'
-                        }
-                    }
-                }
-            }
-        ],
-        'responses': {
-            200: {
-                'description': 'The updated category',
-                'examples': {
-                    'application/json': {
-                        'category_id': 1,
-                        'name': 'Updated Italian',
-                        'description': 'Updated Italian cuisine'
-                    }
-                }
-            },
-            404: {
-                'description': 'Category not found'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
-        }
-    })
     def put(self, category_id):
         """
         Handle PUT requests to update an existing category.
@@ -217,30 +63,6 @@ class CategoryResource(Resource, ResourceMixin):
         """
         return self.handle_update(update_category, category_id, request.json)
 
-    @swag_from({
-        'tags': ['Category'],
-        'description': 'Delete a specific category',
-        'parameters': [
-            {
-                'name': 'category_id',
-                'in': 'path',
-                'type': 'integer',
-                'required': True,
-                'description': 'ID of the category to delete'
-            }
-        ],
-        'responses': {
-            204: {
-                'description': 'Category deleted successfully'
-            },
-            404: {
-                'description': 'Category not found'
-            },
-            500: {
-                'description': 'Internal server error'
-            }
-        }
-    })
     def delete(self, category_id):
         """
         Handle DELETE requests to remove a specific category by its ID.
