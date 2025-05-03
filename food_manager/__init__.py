@@ -52,9 +52,7 @@ def create_app(test_config=None):
     db.init_app(app)
     cache.init_app(app)
 
-    app.cli.add_command(cli.init_db_command)
-    app.cli.add_command(cli.sample_data_command)
-    app.cli.add_command(cli.clear_db_command)
+    cli.init_app(app)
 
     app.url_map.converters['food'] = FoodConverter
     app.url_map.converters['category'] = CategoryConverter
