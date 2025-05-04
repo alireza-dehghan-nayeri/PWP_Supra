@@ -4,26 +4,30 @@ Module for Recipe API endpoints.
 This module defines resources for handling recipes and their associations.
 """
 
-from flask import Response, request
+from flask import Response, request, url_for, make_response
 import json
 from flask_restful import Resource
+from jsonschema import validate, ValidationError
+from werkzeug.exceptions import NotFound
+
+from food_manager.builder import FoodManagerBuilder
+from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, RECIPE_PROFILE
 from food_manager.db_operations import (
     create_recipe, get_recipe_by_id, get_all_recipes, update_recipe, delete_recipe,
     add_ingredient_to_recipe, update_recipe_ingredient, remove_ingredient_from_recipe,
     add_category_to_recipe, remove_category_from_recipe
 )
-from food_manager.utils.reponses import ResourceMixin, internal_server_error
+from food_manager.models import Recipe
+from food_manager.utils.reponses import internal_server_error, create_json_response, error_response
 from food_manager.utils.cache import class_cache
 
 
-# Recipe Resources
 @class_cache
-class RecipeListResource(Resource, ResourceMixin):
+class RecipeListResource(Resource):
     """
     Resource for handling operations on the list of recipes.
     Supports GET for retrieving all recipes and POST for creating a new recipe.
     """
-
 
     def get(self):
         """
@@ -31,8 +35,24 @@ class RecipeListResource(Resource, ResourceMixin):
         :return: A JSON response containing a list of serialized recipe objects
                  with HTTP status code 200.
         """
-        return self.handle_get_all(get_all_recipes)
 
+        self_url = url_for("api.recipelistresource")
+        builder = FoodManagerBuilder()
+        builder.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        builder.add_control("self", self_url)
+        builder.add_control("profile", href=RECIPE_PROFILE)
+        builder.add_control_add_recipe()
+        builder.add_control_all_foods()
+        builder.add_control_all_categories()
+        builder.add_control_all_ingredients()
+
+        try:
+            items = get_all_recipes()
+            serialized_items = [item.serialize() for item in items]
+            builder["items"] = serialized_items
+            return create_json_response(builder)
+        except Exception as e:
+            return internal_server_error(e)
 
     def post(self):
         """
@@ -40,16 +60,50 @@ class RecipeListResource(Resource, ResourceMixin):
         :return: A JSON response with the serialized new recipe object on success,
                  or an error message if recipe creation fails.
         """
-        return self.handle_create(create_recipe, request.json)
+        if not request.is_json:
+            return error_response(
+                title="Unsupported Media Type",
+                message="Request must be in application/json format",
+                status_code=415
+            )
+
+        data = request.get_json()
+        try:
+            validate(data, Recipe.get_schema())
+        except ValidationError as e:
+            return error_response(
+                title="Invalid input",
+                message=e.message,
+                status_code=400
+            )
+
+        try:
+            created_recipe = create_recipe(
+                data.get("food_id"),
+                data.get("instruction"),
+                data.get("prep_time"),
+                data.get("cook_time"),
+                data.get("servings")
+            )
+            response = make_response(create_json_response(created_recipe.serialize(), 201))
+            response.headers["Location"] = url_for("api.reciperesource", recipe_id=created_recipe)
+            return response
+        except ValueError as ve:
+            return error_response(
+                title="Conflict",
+                message=str(ve),
+                status_code=409
+            )
+        except Exception as e:
+            return internal_server_error(e)
 
 
 @class_cache
-class RecipeResource(Resource, ResourceMixin):
+class RecipeResource(Resource):
     """
     Resource for handling operations on a single recipe identified by its recipe_id.
     Supports GET for retrieving, PUT for updating, and DELETE for deleting a recipe.
     """
-
 
     def get(self, recipe_id):
         """
@@ -58,8 +112,18 @@ class RecipeResource(Resource, ResourceMixin):
         :return: A JSON response with the serialized recipe object if found,
                  or an error message with status code 404 if not found.
         """
-        return self.handle_get_by_id(get_recipe_by_id, recipe_id)
 
+        try:
+            recipe = get_recipe_by_id(recipe_id)
+            return create_json_response(recipe.serialize())
+        except NotFound:
+            return error_response(
+                title="Recipe not found",
+                message=f"No Recipe item with ID {recipe_id}",
+                status_code=404
+            )
+        except Exception as e:
+            return internal_server_error(e)
 
     def put(self, recipe_id):
         """
@@ -68,8 +132,49 @@ class RecipeResource(Resource, ResourceMixin):
         :return: A JSON response with the serialized updated recipe object,
                  or an error message if the update fails.
         """
-        return self.handle_update(update_recipe, recipe_id, request.get_json())
 
+        if not request.is_json:
+            return error_response(
+                title="Unsupported Media Type",
+                message="Request must be in application/json format",
+                status_code=415
+            )
+
+        data = request.get_json()
+
+        try:
+            validate(data, Recipe.get_schema())
+        except ValidationError as e:
+            return error_response(
+                title="Invalid input",
+                message=e.message,
+                status_code=400
+            )
+
+        try:
+            updated_recipe = update_recipe(
+                recipe_id=recipe_id,
+                food_id=data.get("food_id"),
+                instruction=data.get("instruction"),
+                prep_time=data.get("prep_time"),
+                cook_time=data.get("cook_time"),
+                servings=data.get("servings")
+            )
+            return create_json_response(updated_recipe.serialize())
+        except NotFound:
+            return error_response(
+                title="Recipe not found",
+                message=f"No Recipe item with ID {recipe_id}",
+                status_code=404
+            )
+        except ValueError as ve:
+            return error_response(
+                title="Conflict",
+                message=str(ve),
+                status_code=409
+            )
+        except Exception as e:
+            return internal_server_error(e)
 
     def delete(self, recipe_id):
         """
@@ -78,10 +183,20 @@ class RecipeResource(Resource, ResourceMixin):
         :return: An empty response with status code 204 (No Content) on successful deletion,
                  or an error message if deletion fails.
         """
-        return self.handle_delete(delete_recipe, recipe_id)
+
+        try:
+            delete_recipe(recipe_id)
+            return Response("", 204)
+        except NotFound:
+            return error_response(
+                title="Recipe not found",
+                message=f"No Recipe item with ID {recipe_id}",
+                status_code=404
+            )
+        except Exception as e:
+            return internal_server_error(e)
 
 
-# Recipe-Ingredient Resource
 @class_cache
 class RecipeIngredientResource(Resource):
     """
@@ -89,7 +204,6 @@ class RecipeIngredientResource(Resource):
     Supports POST for adding, GET for retrieving, PUT for updating, and DELETE for
     removing an ingredient from a recipe.
     """
-
 
     def post(self, recipe_id):
         """
@@ -124,7 +238,6 @@ class RecipeIngredientResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
-
     def get(self, recipe_id):
         """
         Handle GET requests to retrieve a specific recipe (including its ingredients).
@@ -144,7 +257,6 @@ class RecipeIngredientResource(Resource):
             404,
             mimetype="application/json"
         )
-
 
     def put(self, recipe_id):
         """
@@ -179,7 +291,6 @@ class RecipeIngredientResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
-
     def delete(self, recipe_id):
         """
         Handle DELETE requests to remove an ingredient from a recipe.
@@ -212,7 +323,6 @@ class RecipeIngredientResource(Resource):
             return internal_server_error(e)
 
 
-# Recipe-Category Resource
 @class_cache
 class RecipeCategoryResource(Resource):
     """
@@ -220,7 +330,6 @@ class RecipeCategoryResource(Resource):
     Supports POST for adding a category to a recipe, GET for retrieving a recipe with
     categories, and DELETE for removing a category from a recipe.
     """
-
 
     def post(self, recipe_id):
         """
@@ -253,7 +362,6 @@ class RecipeCategoryResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
-
     def get(self, recipe_id):
         """
         Handle GET requests to retrieve a specific recipe (including its categories).
@@ -273,7 +381,6 @@ class RecipeCategoryResource(Resource):
             404,
             mimetype="application/json"
         )
-
 
     def delete(self, recipe_id):
         """

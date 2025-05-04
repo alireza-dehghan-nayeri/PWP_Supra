@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Category Resource Profile</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1 { color: #2c3e50; }
+        code { background-color: #f4f4f4; padding: 2px 4px; }
+        pre { background-color: #f4f4f4; padding: 1em; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>Category Resource Profile</h1>
+
+<p>This resource represents a category that can be associated with one or more recipes (e.g., "Dessert", "Main Course").</p>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+    <tr><td>category_id</td><td>integer</td><td>No</td><td>Unique ID of the category</td></tr>
+    <tr><td>name</td><td>string</td><td>Yes</td><td>Name of the category</td></tr>
+    <tr><td>description</td><td>string</td><td>No</td><td>Optional description of the category</td></tr>
+</table>
+
+<h2>Example Representation</h2>
+<pre>{
+  "category_id": 3,
+  "name": "Appetizer",
+  "description": "Light dishes served before the main course."
+}</pre>
+
+<h2>Link Relations</h2>
+<table>
+    <tr><th>Relation</th><th>Method</th><th>Description</th></tr>
+    <tr><td><code>self</code></td><td>GET</td><td>Link to this category</td></tr>
+    <tr><td><code>edit</code></td><td>PUT</td><td>Edit this category</td></tr>
+    <tr><td><code>delete</code></td><td>DELETE</td><td>Delete this category</td></tr>
+    <tr><td><code>collection</code></td><td>GET</td><td>List all categories</td></tr>
+</table>
+
+<p>Profile: <code>/static/profiles/category.html</code></p>
+
+</body>
+</html>

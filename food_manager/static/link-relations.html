@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Link Relations Profile</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1 { color: #2c3e50; }
+        code { background-color: #f4f4f4; padding: 2px 4px; }
+        pre { background-color: #f4f4f4; padding: 1em; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>Custom Link Relations Profile</h1>
+
+<p>This document defines the custom link relations used throughout the Food Manager API. Each relation includes its purpose, method, and target endpoint.</p>
+
+<h2>Defined Link Relations</h2>
+<table>
+    <tr><th>Relation</th><th>Method</th><th>Target</th><th>Description</th></tr>
+
+    <tr>
+        <td><code>recipes-all</code></td>
+        <td>GET</td>
+        <td>/recipes</td>
+        <td>Fetch all recipes</td>
+    </tr>
+
+    <tr>
+        <td><code>foods-all</code></td>
+        <td>GET</td>
+        <td>/foods</td>
+        <td>Fetch all food items</td>
+    </tr>
+
+    <tr>
+        <td><code>categories-all</code></td>
+        <td>GET</td>
+        <td>/categories</td>
+        <td>Fetch all categories</td>
+    </tr>
+
+    <tr>
+        <td><code>ingredients-all</code></td>
+        <td>GET</td>
+        <td>/ingredients</td>
+        <td>Fetch all ingredients</td>
+    </tr>
+
+    <tr>
+        <td><code>add-food</code></td>
+        <td>POST</td>
+        <td>/foods</td>
+        <td>Add a new food item</td>
+    </tr>
+
+    <tr>
+        <td><code>add-recipe</code></td>
+        <td>POST</td>
+        <td>/recipes</td>
+        <td>Add a new recipe (possibly to a food item)</td>
+    </tr>
+
+    <tr>
+        <td><code>add-category</code></td>
+        <td>POST</td>
+        <td>/categories</td>
+        <td>Add a new category</td>
+    </tr>
+
+    <tr>
+        <td><code>add-ingredient</code></td>
+        <td>POST</td>
+        <td>/ingredients</td>
+        <td>Add a new ingredient</td>
+    </tr>
+
+    <tr>
+        <td><code>add-nutritional-info</code></td>
+        <td>POST</td>
+        <td>/nutritional-info</td>
+        <td>Add nutritional info to a recipe</td>
+    </tr>
+
+    <tr>
+        <td><code>edit</code></td>
+        <td>PUT</td>
+        <td>resource-specific</td>
+        <td>Edit a specific resource (food, recipe, etc.)</td>
+    </tr>
+
+    <tr>
+        <td><code>delete</code></td>
+        <td>DELETE</td>
+        <td>resource-specific</td>
+        <td>Delete a specific resource</td>
+    </tr>
+
+</table>
+
+<h2>Usage</h2>
+<p>These relations appear inside the <code>@controls</code> object of hypermedia responses. They guide clients in how to navigate and interact with the API.</p>
+
+<p>Profile: <code>/static/profiles/link-relations.html</code></p>
+
+</body>
+</html>

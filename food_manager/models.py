@@ -2,9 +2,11 @@
 
 This module defines the SQLAlchemy models for the application.
 """
-
+from flask import url_for
 from sqlalchemy import CheckConstraint
 from food_manager import db
+from food_manager.constants import FOOD_PROFILE, NAMESPACE, LINK_RELATIONS_URL, RECIPE_PROFILE, INGREDIENT_PROFILE, \
+    CATEGORY_PROFILE, NUTRITION_PROFILE
 
 
 ###############################################################################
@@ -27,18 +29,58 @@ class Food(db.Model):
         lazy='dynamic'
     )
 
-    def serialize(self):
+    @staticmethod
+    def get_schema() -> dict:
+        """
+        Schema for the Food model.
+
+        :return: Food schema
+        """
+        return {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "image_url": {"type": "string"},
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        }
+
+    def serialize(self, short_form=False):
         """
         Serialize the Food object to a dictionary.
 
         :return: Dictionary containing food_id, name, description, and image_url.
         """
-        return {
-            'food_id': self.food_id,
-            'name': self.name,
-            'description': self.description,
-            'image_url': self.image_url
-        }
+
+        from food_manager.builder import FoodManagerBuilder
+
+        data = FoodManagerBuilder(
+            food_id=self.food_id,
+            name=self.name,
+            description=self.description,
+            image_url=self.image_url,
+        )
+
+        if short_form:
+            data.add_control("self", href=url_for("api.foodresource", food_id=self))
+            data.add_control("profile", href=FOOD_PROFILE)
+            return data
+
+        data.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        data.add_control("self", href=url_for("api.foodresource", food_id=self))
+        data.add_control("profile", href=FOOD_PROFILE)
+        data.add_control("collection", href=url_for("api.foodlistresource"))
+
+        if self.recipes.count() == 0:
+            data.add_control_add_recipe(food_id=self.food_id)
+
+        data.add_control_edit_food(self)
+        data.add_control_delete_food(self)
+        data["recipes"] = [recipe.serialize(short_form=True) for recipe in self.recipes]
+
+        return data
 
     @staticmethod
     def deserialize(data):
@@ -97,51 +139,91 @@ class Recipe(db.Model):
         CheckConstraint("servings > 0", name="servings_constraint"),
     )
 
+    @staticmethod
+    def get_schema(default_food_id=None) -> dict:
+        """Schema for the Recipe model.
 
-    def serialize(self):
+        :param default_food_id: Optional default value for food_id
+        :return: recipe schema
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "food_id": {
+                    "type": "number",
+                    **({"default": default_food_id} if default_food_id is not None else {})
+                },
+                "instruction": {"type": "string"},
+                "prep_time": {"type": "number", "minimum": 0},
+                "cook_time": {"type": "number", "minimum": 0},
+                "servings": {"type": "number", "minimum": 1},
+            },
+            "required": ["food_id", "instruction", "prep_time", "cook_time", "servings"],
+            "additionalProperties": False,
+        }
+        return schema
+
+    def serialize(self, short_form=False):
         """
         Serialize the Recipe object to a dictionary including related objects.
 
         :return: Dictionary with recipe details and nested serialized food,
                  nutritional_info, ingredients, and categories.
         """
-        return {
-            'recipe_id': self.recipe_id,
-            'food_id': self.food_id,
-            'instruction': self.instruction,
-            'prep_time': self.prep_time,
-            'cook_time': self.cook_time,
-            'servings': self.servings,
-            'food': self.food.serialize(),
-            'nutritional_info': (
-                self.nutritional_info.serialize() if self.nutritional_info else None
-            ),
-            'ingredients': [
-                {
-                    'ingredient': ing.serialize(),
-                    'quantity': next(
-                        (
-                            ri.quantity for ri in RecipeIngredient.query.filter_by(
-                                recipe_id=self.recipe_id,
-                                ingredient_id=ing.ingredient_id
-                            )
-                        ),
-                        None
-                    ),
-                    'unit': next(
-                        (
-                            ri.unit for ri in RecipeIngredient.query.filter_by(
-                                recipe_id=self.recipe_id,
-                                ingredient_id=ing.ingredient_id
-                            )
-                        ),
-                        None
+
+        from food_manager.builder import FoodManagerBuilder
+
+        data = FoodManagerBuilder(
+            recipe_id=self.recipe_id,
+            food_id=self.food_id,
+            instruction=self.instruction,
+            prep_time=self.prep_time,
+            cook_time=self.cook_time,
+            servings=self.servings,
+            food=self.food.name
+        )
+
+        if short_form:
+            data.add_control("self", href=url_for("api.reciperesource", recipe_id=self))
+            data.add_control("profile", href=RECIPE_PROFILE)
+            return data
+
+        data.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        data.add_control("self", href=url_for("api.reciperesource", recipe_id=self))
+        data.add_control("profile", href=RECIPE_PROFILE)
+        data.add_control("collection", href=url_for("api.recipelistresource"))
+        data.add_control_food(self)
+        data.add_control_edit_recipe(recipe=self, food_id=self.food_id)
+        data.add_control_delete_recipe(self)
+
+        data["nutritional_info"] = self.nutritional_info.serialize() if self.nutritional_info else None
+        data["categories"] = [cat.serialize() for cat in self.categories]
+        data["ingredients"] = [
+            {
+                "ingredient": ing.serialize(),
+                "quantity": next(
+                    (
+                        ri.quantity for ri in RecipeIngredient.query.filter_by(
+                        recipe_id=self.recipe_id,
+                        ingredient_id=ing.ingredient_id
                     )
-                }
-                for ing in self.ingredients
-            ],
-            'categories': [cat.serialize() for cat in self.categories]
-        }
+                    ),
+                    None
+                ),
+                "unit": next(
+                    (
+                        ri.unit for ri in RecipeIngredient.query.filter_by(
+                        recipe_id=self.recipe_id,
+                        ingredient_id=ing.ingredient_id
+                    )
+                    ),
+                    None
+                )
+            }
+            for ing in self.ingredients
+        ]
+
+        return data
 
     @staticmethod
     def deserialize(data):
@@ -177,6 +259,21 @@ class Ingredient(db.Model):
         back_populates='ingredients'
     )
 
+    @staticmethod
+    def get_schema() -> dict:
+        """Schema for the Ingredient model.
+
+        :return: ingredient schema
+        """
+        return {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "image_url": {"type": "string"},
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        }
 
     def serialize(self):
         """
@@ -184,11 +281,22 @@ class Ingredient(db.Model):
 
         :return: Dictionary containing ingredient_id, name, and image_url.
         """
-        return {
-            'ingredient_id': self.ingredient_id,
-            'name': self.name,
-            'image_url': self.image_url
-        }
+
+        from food_manager.builder import FoodManagerBuilder
+
+        data = FoodManagerBuilder(
+            ingredient_id=self.ingredient_id,
+            name=self.name,
+            image_url=self.image_url,
+        )
+        data.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        data.add_control("self", href=url_for("api.ingredientresource", ingredient_id=self))
+        data.add_control("profile", href=INGREDIENT_PROFILE)
+        data.add_control("collection", href=url_for("api.ingredientlistresource"))
+        data.add_control_edit_ingredient(self)
+        data.add_control_delete_ingredient(self)
+
+        return data
 
     @staticmethod
     def deserialize(data):
@@ -220,17 +328,44 @@ class Category(db.Model):
         back_populates='categories'
     )
 
+    @staticmethod
+    def get_schema() -> dict:
+        """Schema for the Category model.
+
+        :return: Category schema
+        """
+        return {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        }
+
     def serialize(self):
         """
         Serialize the Category object to a dictionary.
 
         :return: Dictionary containing category_id, name, and description.
         """
-        return {
-            'category_id': self.category_id,
-            'name': self.name,
-            'description': self.description
-        }
+
+        from food_manager.builder import FoodManagerBuilder
+
+        data = FoodManagerBuilder(
+            category_id=self.category_id,
+            name=self.name,
+            description=self.description,
+        )
+        data.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        data.add_control("self", href=url_for("api.categoryresource", category_id=self))
+        data.add_control("profile", href=CATEGORY_PROFILE)
+        data.add_control("collection", href=url_for("api.categorylistresource"))
+        data.add_control_edit_category(self)
+        data.add_control_delete_category(self)
+
+        return data
 
     @staticmethod
     def deserialize(data):
@@ -272,6 +407,27 @@ class NutritionalInfo(db.Model):
         CheckConstraint("fat >= 0", name="fat_constraint"),
     )
 
+    @staticmethod
+    def get_schema(default_recipe_id=None) -> dict:
+        """Schema for the NutritionalInfo model.
+
+        :return: nutritional info schema
+        """
+        return {
+            "type": "object",
+            "properties": {
+                "recipe_id": {
+                    "type": "number",
+                    **({"default": default_recipe_id} if default_recipe_id is not None else {})
+                },
+                "calories": {"type": "number", "minimum": 0},
+                "protein": {"type": "number", "minimum": 0},
+                "carbs": {"type": "number", "minimum": 0},
+                "fat": {"type": "number", "minimum": 0},
+            },
+            "required": ["recipe_id", "calories", "protein", "carbs", "fat"],
+            "additionalProperties": False,
+        }
 
     def serialize(self):
         """
@@ -279,14 +435,26 @@ class NutritionalInfo(db.Model):
 
         :return: Dictionary containing nutritional_info_id, recipe_id, calories, protein, carbs, and fat.
         """
-        return {
-            'nutritional_info_id': self.nutritional_info_id,
-            'recipe_id': self.recipe_id,
-            'calories': self.calories,
-            'protein': self.protein,
-            'carbs': self.carbs,
-            'fat': self.fat
-        }
+        from food_manager.builder import FoodManagerBuilder
+
+        data = FoodManagerBuilder(
+            nutritional_info_id=self.nutritional_info_id,
+            recipe_id=self.recipe_id,
+            calories=self.calories,
+            protein=self.protein,
+            carbs=self.carbs,
+            fat=self.fat
+        )
+
+        data.add_namespace(NAMESPACE, LINK_RELATIONS_URL)
+        data.add_control("self", href=url_for("api.nutritionalinforesource", nutritional_info_id=self))
+        data.add_control("profile", href=NUTRITION_PROFILE)
+        data.add_control("collection", href=url_for("api.nutritionalinfolistresource"))
+        data.add_control("up", href=url_for("api.reciperesource", recipe_id=self))
+        data.add_control_edit_nutritional_info(nutritional_info=self, recipe_id=self.recipe_id)
+        data.add_control_delete_nutritional_info(self)
+
+        return data
 
     @staticmethod
     def deserialize(data):
@@ -326,6 +494,23 @@ class RecipeIngredient(db.Model):
         CheckConstraint("quantity > 0", name="quantity_constraint"),
     )
 
+    @staticmethod
+    def get_schema() -> dict:
+        """Schema for the RecipeIngredient model.
+
+        :return: Recipe_ingredient schema
+        """
+        return {
+            "type": "object",
+            "properties": {
+                "recipe_id": {"type": "number"},
+                "ingredient_id": {"type": "number"},
+                "quantity": {"type": "number", "minimum": 0.000001},
+                "unit": {"type": "string"},
+            },
+            "required": ["recipe_id", "ingredient_id", "quantity", "unit"],
+            "additionalProperties": False,
+        }
 
     def serialize(self):
         """
@@ -371,6 +556,21 @@ class RecipeCategory(db.Model):
         primary_key=True
     )
 
+    @staticmethod
+    def get_schema() -> dict:
+        """Schema for the RecipeCategory model.
+
+        :return: Recipe_category schema
+        """
+        return {
+            "type": "object",
+            "properties": {
+                "recipe_id": {"type": "number"},
+                "category_id": {"type": "number"},
+            },
+            "required": ["recipe_id", "category_id"],
+            "additionalProperties": False,
+        }
 
     def serialize(self):
         """

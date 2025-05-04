@@ -21,13 +21,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/foods",
+							"raw": "{{base_url}}/api/foods/",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"foods"
+								"foods",
+								""
 							]
 						}
 					},
@@ -54,13 +55,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/foods",
+							"raw": "{{base_url}}/api/foods/",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"foods"
+								"foods",
+								""
 							]
 						}
 					},
@@ -104,7 +106,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"example_key\": \"example_value\"\n}",
+							"raw": "{\n  \"name\": \"Spaghettadi\",\n  \"description\": \"Classic pasta dish\",\n  \"image_url\": \"http://example.com/spaghetti.jpg\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -192,7 +194,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Dinner\",\n  \"description\": \"Evening meals\"\n}",
+							"raw": "{\n  \"name\": \"Dinnedr\",\n  \"description\": \"Evening meals\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -224,14 +226,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/categories/1",
+							"raw": "{{base_url}}/api/categories/5",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"categories",
-								"1"
+								"5"
 							]
 						}
 					},
@@ -459,13 +461,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/recipes",
+							"raw": "{{base_url}}/api/recipes/",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"recipes"
+								"recipes",
+								""
 							]
 						}
 					},
@@ -614,20 +617,20 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/nutrition",
+							"raw": "{{base_url}}/api/nutritional-info",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"nutrition"
+								"nutritional-info"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Get Nutritional Info for Recipe",
+					"name": "Get ALL Nutritional Info",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -638,15 +641,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/nutrition/recipe/1",
+							"raw": "{{base_url}}/api/nutritional-info",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"nutrition",
-								"recipe",
-								"1"
+								"nutritional-info"
 							]
 						}
 					},
@@ -673,13 +674,13 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/nutrition/1",
+							"raw": "{{base_url}}/api/nutritional-info/1",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"nutrition",
+								"nutritional-info",
 								"1"
 							]
 						}
@@ -698,183 +699,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/nutrition/1",
+							"raw": "{{base_url}}/api/nutritional-info/1",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"nutrition",
-								"1"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Recipe-Ingredient",
-			"item": [
-				{
-					"name": "Add Ingredient to Recipe",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"ingredient_id\": 1,\n  \"quantity\": 2,\n  \"unit\": \"cups\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/recipes/1/ingredients",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"recipes",
-								"1",
-								"ingredients"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Ingredient in Recipe",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"quantity\": 3,\n  \"unit\": \"tbsp\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/recipes/1/ingredients/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"recipes",
-								"1",
-								"ingredients",
-								"1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Remove Ingredient from Recipe",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/recipes/1/ingredients/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"recipes",
-								"1",
-								"ingredients",
-								"1"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Recipe-Category",
-			"item": [
-				{
-					"name": "Add Category to Recipe",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"category_id\": 1\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{base_url}}/api/recipes/1/categories",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"recipes",
-								"1",
-								"categories"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Remove Category from Recipe",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/recipes/1/categories/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"recipes",
-								"1",
-								"categories",
+								"nutritional-info",
 								"1"
 							]
 						}

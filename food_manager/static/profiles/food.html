@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Food Resource Profile</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1 { color: #2c3e50; }
+        code { background-color: #f4f4f4; padding: 2px 4px; }
+        pre { background-color: #f4f4f4; padding: 1em; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>Food Resource Profile</h1>
+
+<p>This resource represents a food item that may be associated with one or more recipes.</p>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+    <tr><td>food_id</td><td>integer</td><td>No</td><td>Unique identifier of the food item</td></tr>
+    <tr><td>name</td><td>string</td><td>Yes</td><td>Name of the food</td></tr>
+    <tr><td>description</td><td>string</td><td>No</td><td>Optional description of the food</td></tr>
+    <tr><td>image_url</td><td>string</td><td>No</td><td>Optional image URL</td></tr>
+    <tr><td>recipes</td><td>array</td><td>No</td><td>List of associated recipes (short form)</td></tr>
+</table>
+
+<h2>Example Representation</h2>
+<pre>{
+  "food_id": 123,
+  "name": "Banana",
+  "description": "A sweet fruit",
+  "image_url": "https://example.com/images/banana.jpg",
+  "recipes": [
+    { "recipe_id": 1, "instruction": "Peel and eat." }
+  ]
+}</pre>
+
+<h2>Link Relations</h2>
+<table>
+    <tr><th>Relation</th><th>Method</th><th>Description</th></tr>
+    <tr><td><code>self</code></td><td>GET</td><td>Link to this food item</td></tr>
+    <tr><td><code>edit</code></td><td>PUT</td><td>Edit this food item</td></tr>
+    <tr><td><code>delete</code></td><td>DELETE</td><td>Delete this food item</td></tr>
+    <tr><td><code>collection</code></td><td>GET</td><td>Get all foods</td></tr>
+    <tr><td><code>add-recipe</code></td><td>POST</td><td>Add a recipe to this food (if none exists)</td></tr>
+</table>
+
+<p>Profile: <code>/static/profiles/food.html</code></p>
+
+</body>
+</html>

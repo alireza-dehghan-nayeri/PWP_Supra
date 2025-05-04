@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Error Response Profile</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1 { color: #c0392b; }
+        code { background-color: #f4f4f4; padding: 2px 4px; }
+        pre { background-color: #f4f4f4; padding: 1em; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>Error Response Profile</h1>
+
+<p>This profile defines the structure of error responses returned by the API. All error responses follow a consistent format and include a machine-readable and human-readable message.</p>
+
+<h2>Error Structure</h2>
+<pre>{
+  "@error": {
+    "@message": "Short error title",
+    "@messages": ["Detailed description of the error"]
+  },
+  "@controls": {
+    "profile": {
+      "href": "/static/profiles/error.html"
+    }
+  }
+}</pre>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+    <tr><td>@error.@message</td><td>string</td><td>A short, human-readable title describing the error.</td></tr>
+    <tr><td>@error.@messages</td><td>array of strings</td><td>Additional detailed messages explaining the cause of the error.</td></tr>
+    <tr><td>@controls.profile.href</td><td>string</td><td>Points to this error profile for clients to understand the structure.</td></tr>
+</table>
+
+<h2>Common HTTP Status Codes</h2>
+<ul>
+    <li><strong>400 Bad Request</strong> — Validation failed, missing fields, or schema mismatch.</li>
+    <li><strong>404 Not Found</strong> — Requested resource does not exist.</li>
+    <li><strong>409 Conflict</strong> — Duplicate entries or constraint violations.</li>
+    <li><strong>415 Unsupported Media Type</strong> — Content type must be application/json.</li>
+    <li><strong>500 Internal Server Error</strong> — Unexpected server-side failure.</li>
+</ul>
+
+<h2>Example Error Response</h2>
+<pre>{
+  "@error": {
+    "@message": "Invalid input",
+    "@messages": ["Field 'name' is required."]
+  },
+  "@controls": {
+    "profile": {
+      "href": "/static/profiles/error.html"
+    }
+  }
+}</pre>
+
+</body>
+</html>

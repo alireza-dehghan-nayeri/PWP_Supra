@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nutritional Info Resource Profile</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1 { color: #2c3e50; }
+        code { background-color: #f4f4f4; padding: 2px 4px; }
+        pre { background-color: #f4f4f4; padding: 1em; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>Nutritional Info Resource Profile</h1>
+
+<p>This resource represents the nutritional information for a specific recipe, including calories, protein, carbs, and fat content.</p>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+    <tr><td>nutritional_info_id</td><td>integer</td><td>No</td><td>Unique ID of the nutritional info</td></tr>
+    <tr><td>recipe_id</td><td>integer</td><td>Yes</td><td>ID of the associated recipe</td></tr>
+    <tr><td>calories</td><td>integer</td><td>Yes</td><td>Total calories</td></tr>
+    <tr><td>protein</td><td>float</td><td>Yes</td><td>Grams of protein</td></tr>
+    <tr><td>carbs</td><td>float</td><td>Yes</td><td>Grams of carbohydrates</td></tr>
+    <tr><td>fat</td><td>float</td><td>Yes</td><td>Grams of fat</td></tr>
+</table>
+
+<h2>Example Representation</h2>
+<pre>{
+  "nutritional_info_id": 10,
+  "recipe_id": 42,
+  "calories": 450,
+  "protein": 18.5,
+  "carbs": 35.0,
+  "fat": 12.0
+}</pre>
+
+<h2>Link Relations</h2>
+<table>
+    <tr><th>Relation</th><th>Method</th><th>Description</th></tr>
+    <tr><td><code>self</code></td><td>GET</td><td>Link to this nutritional info</td></tr>
+    <tr><td><code>edit</code></td><td>PUT</td><td>Edit this nutritional info</td></tr>
+    <tr><td><code>delete</code></td><td>DELETE</td><td>Delete this nutritional info</td></tr>
+    <tr><td><code>collection</code></td><td>GET</td><td>List all nutritional info entries</td></tr>
+    <tr><td><code>up</code></td><td>GET</td><td>Go to the associated recipe</td></tr>
+</table>
+
+<p>Profile: <code>/static/profiles/nutritional_info.html</code></p>
+
+</body>
+</html>

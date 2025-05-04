@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recipe Resource Profile</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1 { color: #2c3e50; }
+        code { background-color: #f4f4f4; padding: 2px 4px; }
+        pre { background-color: #f4f4f4; padding: 1em; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>Recipe Resource Profile</h1>
+
+<p>This resource represents a recipe associated with a specific food item, including instructions and preparation details.</p>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+    <tr><td>recipe_id</td><td>integer</td><td>No</td><td>Unique ID of the recipe</td></tr>
+    <tr><td>food_id</td><td>integer</td><td>Yes</td><td>Foreign key referencing the associated food</td></tr>
+    <tr><td>instruction</td><td>string</td><td>Yes</td><td>Cooking instructions</td></tr>
+    <tr><td>prep_time</td><td>integer</td><td>Yes</td><td>Preparation time (minutes)</td></tr>
+    <tr><td>cook_time</td><td>integer</td><td>Yes</td><td>Cooking time (minutes)</td></tr>
+    <tr><td>servings</td><td>integer</td><td>Yes</td><td>Number of servings</td></tr>
+    <tr><td>nutritional_info</td><td>object</td><td>No</td><td>Nutritional details</td></tr>
+    <tr><td>ingredients</td><td>array</td><td>No</td><td>List of ingredients with quantities and units</td></tr>
+    <tr><td>categories</td><td>array</td><td>No</td><td>List of associated categories</td></tr>
+</table>
+
+<h2>Example Representation</h2>
+<pre>{
+  "recipe_id": 42,
+  "food_id": 123,
+  "instruction": "Mix and bake at 180°C.",
+  "prep_time": 15,
+  "cook_time": 30,
+  "servings": 4,
+  "nutritional_info": {
+    "calories": 200,
+    "protein": 5,
+    "carbs": 30,
+    "fat": 7
+  },
+  "ingredients": [
+    {
+      "ingredient": { "name": "Flour" },
+      "quantity": 200,
+      "unit": "grams"
+    }
+  ],
+  "categories": [
+    { "name": "Dessert" }
+  ]
+}</pre>
+
+<h2>Link Relations</h2>
+<table>
+    <tr><th>Relation</th><th>Method</th><th>Description</th></tr>
+    <tr><td><code>self</code></td><td>GET</td><td>Link to this recipe</td></tr>
+    <tr><td><code>edit</code></td><td>PUT</td><td>Edit this recipe</td></tr>
+    <tr><td><code>delete</code></td><td>DELETE</td><td>Delete this recipe</td></tr>
+    <tr><td><code>collection</code></td><td>GET</td><td>List all recipes</td></tr>
+    <tr><td><code>food</code></td><td>GET</td><td>View associated food</td></tr>
+</table>
+
+<p>Profile: <code>/static/profiles/recipe.html</code></p>
+
+</body>
+</html>

@@ -66,6 +66,12 @@ def update_food(food_id, name=None, description=None, image_url=None):
     """
     from food_manager.models import Food
     food = Food.query.get_or_404(food_id)
+
+    if name and name != food.name:
+        existing = Food.query.filter_by(name=name).first()
+        if existing and existing.food_id != food.food_id:
+            raise ValueError(f"Food with name '{name}' already exists.")
+
     if name:
         food.name = name
     if description is not None:
@@ -229,6 +235,13 @@ def update_ingredient(ingredient_id, name=None, image_url=None):
     """
     from food_manager.models import Ingredient
     ingredient = Ingredient.query.get_or_404(ingredient_id)
+
+    if name and name != ingredient.name:
+        existing = Ingredient.query.filter_by(name=name).first()
+        if existing and existing.ingredient_id != ingredient.ingredient_id:
+            raise ValueError(f"Ingredient with name '{name}' already exists.")
+
+
     if name:
         ingredient.name = name
     if image_url is not None:
@@ -300,6 +313,12 @@ def update_category(category_id, name=None, description=None):
     """
     from food_manager.models import Category
     category = Category.query.get_or_404(category_id)
+
+    if name and name != category.name:
+        existing = Category.query.filter_by(name=name).first()
+        if existing and existing.category_id != category.category_id:
+            raise ValueError(f"Category with name '{name}' already exists.")
+
     if name:
         category.name = name
     if description is not None:

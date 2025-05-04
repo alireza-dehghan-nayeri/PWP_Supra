@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ingredient Resource Profile</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h1 { color: #2c3e50; }
+        code { background-color: #f4f4f4; padding: 2px 4px; }
+        pre { background-color: #f4f4f4; padding: 1em; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>Ingredient Resource Profile</h1>
+
+<p>This resource represents an ingredient that can be used in one or more recipes.</p>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+    <tr><td>ingredient_id</td><td>integer</td><td>No</td><td>Unique ID of the ingredient</td></tr>
+    <tr><td>name</td><td>string</td><td>Yes</td><td>Name of the ingredient</td></tr>
+    <tr><td>image_url</td><td>string</td><td>No</td><td>Optional image URL</td></tr>
+</table>
+
+<h2>Example Representation</h2>
+<pre>{
+  "ingredient_id": 7,
+  "name": "Sugar",
+  "image_url": "https://example.com/images/sugar.jpg"
+}</pre>
+
+<h2>Link Relations</h2>
+<table>
+    <tr><th>Relation</th><th>Method</th><th>Description</th></tr>
+    <tr><td><code>self</code></td><td>GET</td><td>Link to this ingredient</td></tr>
+    <tr><td><code>edit</code></td><td>PUT</td><td>Edit this ingredient</td></tr>
+    <tr><td><code>delete</code></td><td>DELETE</td><td>Delete this ingredient</td></tr>
+    <tr><td><code>collection</code></td><td>GET</td><td>List all ingredients</td></tr>
+</table>
+
+<p>Profile: <code>/static/profiles/ingredient.html</code></p>
+
+</body>
+</html>
