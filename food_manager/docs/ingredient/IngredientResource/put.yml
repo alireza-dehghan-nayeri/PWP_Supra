@@ -1,0 +1,25 @@
+---
+summary: Update an ingredient
+parameters:
+  - $ref: '#/components/parameters/ingredientId'
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/Ingredient'
+responses:
+  '200':
+    description: Updated ingredient
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Ingredient'
+  '400':
+    description: Invalid input
+  '404':
+    description: Not found
+  '409':
+    description: Conflict
+  '415':
+    description: Unsupported Media Type

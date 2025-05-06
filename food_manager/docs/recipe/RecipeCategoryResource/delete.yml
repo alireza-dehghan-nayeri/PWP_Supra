@@ -1,0 +1,24 @@
+---
+summary: Remove a category from a recipe
+parameters:
+  - $ref: '#/components/parameters/recipeId'
+requestBody:
+  description: JSON document identifying the category to remove
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [category_id]
+        properties:
+          category_id:
+            type: string
+      example:
+        category_id: "dairy"
+responses:
+  '200':
+    description: Category removed successfully
+  '400':
+    description: Missing category_id
+  '404':
+    description: Recipe or category not found

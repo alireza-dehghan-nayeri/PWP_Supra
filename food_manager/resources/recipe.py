@@ -3,7 +3,9 @@ Module for Recipe API endpoints.
 
 This module defines resources for handling recipes and their associations.
 """
+import os
 
+from flasgger import swag_from
 from flask import Response, request, url_for, make_response
 import json
 from flask_restful import Resource
@@ -11,7 +13,7 @@ from jsonschema import validate, ValidationError
 from werkzeug.exceptions import NotFound
 
 from food_manager.builder import FoodManagerBuilder
-from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, RECIPE_PROFILE
+from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, RECIPE_PROFILE, DOC_FOLDER
 from food_manager.db_operations import (
     create_recipe, get_recipe_by_id, get_all_recipes, update_recipe, delete_recipe,
     add_ingredient_to_recipe, update_recipe_ingredient, remove_ingredient_from_recipe,
@@ -29,6 +31,7 @@ class RecipeListResource(Resource):
     Supports GET for retrieving all recipes and POST for creating a new recipe.
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeListResource/get.yml")
     def get(self):
         """
         Handle GET requests to retrieve all recipes.
@@ -54,6 +57,7 @@ class RecipeListResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeListResource/post.yml")
     def post(self):
         """
         Handle POST requests to create a new recipe.
@@ -105,6 +109,7 @@ class RecipeResource(Resource):
     Supports GET for retrieving, PUT for updating, and DELETE for deleting a recipe.
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeResource/get.yml")
     def get(self, recipe_id):
         """
         Handle GET requests to retrieve a specific recipe by its recipe_id.
@@ -125,6 +130,7 @@ class RecipeResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeResource/put.yml")
     def put(self, recipe_id):
         """
         Handle PUT requests to update an existing recipe.
@@ -176,6 +182,7 @@ class RecipeResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeResource/delete.yml")
     def delete(self, recipe_id):
         """
         Handle DELETE requests to remove a specific recipe by its recipe_id.
@@ -205,6 +212,7 @@ class RecipeIngredientResource(Resource):
     removing an ingredient from a recipe.
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeIngredientResource/post.yml")
     def post(self, recipe_id):
         """
         Handle POST requests to add an ingredient to a recipe.
@@ -238,6 +246,7 @@ class RecipeIngredientResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeIngredientResource/get.yml")
     def get(self, recipe_id):
         """
         Handle GET requests to retrieve a specific recipe (including its ingredients).
@@ -258,6 +267,7 @@ class RecipeIngredientResource(Resource):
             mimetype="application/json"
         )
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeIngredientResource/put.yml")
     def put(self, recipe_id):
         """
         Handle PUT requests to update an ingredient's details within a recipe.
@@ -291,6 +301,7 @@ class RecipeIngredientResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeIngredientResource/delete.yml")
     def delete(self, recipe_id):
         """
         Handle DELETE requests to remove an ingredient from a recipe.
@@ -331,6 +342,7 @@ class RecipeCategoryResource(Resource):
     categories, and DELETE for removing a category from a recipe.
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeCategoryResource/post.yml")
     def post(self, recipe_id):
         """
         Handle POST requests to add a category to a recipe.
@@ -362,6 +374,7 @@ class RecipeCategoryResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeCategoryResource/get.yml")
     def get(self, recipe_id):
         """
         Handle GET requests to retrieve a specific recipe (including its categories).
@@ -381,7 +394,8 @@ class RecipeCategoryResource(Resource):
             404,
             mimetype="application/json"
         )
-
+    
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeCategoryResource/delete.yml")
     def delete(self, recipe_id):
         """
         Handle DELETE requests to remove a category from a recipe.

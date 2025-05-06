@@ -1,0 +1,13 @@
+---
+summary: Retrieve a single category
+parameters:
+  - $ref: '#/components/parameters/categoryId'
+responses:
+  '200':
+    description: Category object
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Category'
+  '404':
+    description: Not found

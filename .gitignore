@@ -1,5 +1,9 @@
 food_manager/__pycache__/
 
 .venv
+venv/
 .idea
-food_manager/instance
+/instance
+__pycache__/
+*.py[cod]
+.DS_Store

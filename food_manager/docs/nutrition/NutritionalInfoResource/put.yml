@@ -1,0 +1,25 @@
+---
+summary: Update a nutritional info entry
+parameters:
+  - $ref: '#/components/parameters/nutInfoId'
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/NutritionalInfo'
+responses:
+  '200':
+    description: Updated entry
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/NutritionalInfo'
+  '400':
+    description: Invalid input
+  '404':
+    description: Not found
+  '409':
+    description: Conflict
+  '415':
+    description: Unsupported Media Type

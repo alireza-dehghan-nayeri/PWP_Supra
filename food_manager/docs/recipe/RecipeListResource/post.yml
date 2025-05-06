@@ -1,0 +1,29 @@
+---
+requestBody:
+  description: JSON object describing the new recipe
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/Recipe'
+      example:
+        food_id: "apple-1"
+        instruction: "Peel and slice apples; serve chilled."
+        prep_time: 10
+        cook_time: 0
+        servings: 4
+responses:
+  '201':
+    description: Recipe created successfully
+    headers:
+      Location:
+        description: URI of the newly created recipe
+        schema:
+          type: string
+  '400':
+    description: Invalid input (validation error)
+  '409':
+    description: Conflict (e.g. duplicate)
+  '415':
+    description: Unsupported Media Type (not application/json)
+

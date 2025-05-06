@@ -1,0 +1,28 @@
+---
+summary: Update a category
+parameters:
+  - $ref: '#/components/parameters/categoryId'
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/Category'
+      example:
+        name: Fruit & Berries
+        description: All fruit and berry varieties
+responses:
+  '200':
+    description: Updated category
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Category'
+  '400':
+    description: Invalid input
+  '404':
+    description: Not found
+  '409':
+    description: Conflict
+  '415':
+    description: Unsupported Media Type

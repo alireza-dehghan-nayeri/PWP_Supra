@@ -1,0 +1,12 @@
+---
+parameters:
+  - $ref: '#/components/parameters/recipeId'
+responses:
+  '200':
+    description: A single recipe object
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Recipe'
+  '404':
+    description: Recipe not found

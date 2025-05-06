@@ -8,6 +8,7 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
+from flasgger import Swagger  # Import Flasgger
 
 # Initialize the SQLAlchemy database instance.
 db = SQLAlchemy()
@@ -36,7 +37,14 @@ def create_app(test_config=None):
         SQLALCHEMY_DATABASE_URI="sqlite:///" + os.path.join(app.instance_path, "development.db"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         CACHE_TYPE='simple',
-        CACHE_DEFAULT_TIMEOUT=86400
+        CACHE_DEFAULT_TIMEOUT=86400,
+
+        # Swagger configuration
+        SWAGGER={
+            "title": "Food Manager API",
+            "uiversion": 3,
+            "openapi": "3.0.4",
+        }
     )
 
     if test_config is None:
@@ -49,18 +57,24 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    # Initialize extensions
     db.init_app(app)
     cache.init_app(app)
 
     cli.init_app(app)
 
+    # Register custom URL converters
     app.url_map.converters['food'] = FoodConverter
     app.url_map.converters['category'] = CategoryConverter
     app.url_map.converters['recipe'] = RecipeConverter
     app.url_map.converters['ingredient'] = IngredientConverter
     app.url_map.converters['nutritional_info'] = NutritionalInfoConverter
 
+    # Register the API blueprint
     app.register_blueprint(api.api_bp)
+
+    # Enable Swagger using external YAML
+    Swagger(app, template_file="docs/hub.yml")
 
     with app.app_context():
         db.create_all()

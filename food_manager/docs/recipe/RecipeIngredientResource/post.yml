@@ -1,0 +1,29 @@
+---
+summary: Add an ingredient to a recipe
+parameters:
+  - $ref: '#/components/parameters/recipeId'
+requestBody:
+  description: JSON document with new ingredient details
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [ingredient_id, quantity]
+        properties:
+          ingredient_id:
+            type: string
+          quantity:
+            type: number
+          unit:
+            type: string
+            default: piece
+      example:
+        ingredient_id: "flour"
+        quantity: 200
+        unit: grams
+responses:
+  '201':
+    description: Ingredient added successfully
+  '400':
+    description: Missing or invalid fields

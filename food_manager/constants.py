@@ -3,8 +3,8 @@ This module contains constants used by the API
 """
 
 MASON = "application/vnd.mason+json"
-LINK_RELATIONS_URL = "/foodmanager/link-relations/"
-DOC_FOLDER = "/foodmanager/doc/"
+LINK_RELATIONS_URL = "/food_manager/link-relations/"
+DOC_FOLDER = "/food_manager/docs/"
 
 # profile paths for all resources
 CATEGORY_PROFILE = "/profiles/category/"

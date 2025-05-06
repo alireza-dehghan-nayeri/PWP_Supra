@@ -1,0 +1,30 @@
+---
+summary: Update an ingredient’s details in a recipe
+parameters:
+  - $ref: '#/components/parameters/recipeId'
+requestBody:
+  description: JSON document with ingredient update
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [ingredient_id]
+        properties:
+          ingredient_id:
+            type: string
+          quantity:
+            type: number
+          unit:
+            type: string
+      example:
+        ingredient_id: "flour"
+        quantity: 250
+        unit: grams
+responses:
+  '200':
+    description: Ingredient updated successfully
+  '400':
+    description: Missing or invalid fields
+  '404':
+    description: Recipe or ingredient not found

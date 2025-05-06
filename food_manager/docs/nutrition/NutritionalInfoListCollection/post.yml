@@ -1,0 +1,27 @@
+---
+summary: Create a new nutritional info entry
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/NutritionalInfo'
+      example:
+        calories: 150
+        fats: 5
+        carbs: 20
+        protein: 3
+responses:
+  '201':
+    description: Nutritional info created
+    headers:
+      Location:
+        description: URL of new entry
+        schema:
+          type: string
+  '400':
+    description: Invalid input
+  '409':
+    description: Conflict
+  '415':
+    description: Unsupported Media Type

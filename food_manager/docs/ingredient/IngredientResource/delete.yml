@@ -1,0 +1,9 @@
+---
+summary: Delete an ingredient
+parameters:
+  - $ref: '#/components/parameters/ingredientId'
+responses:
+  '204':
+    description: Deleted successfully (no content)
+  '404':
+    description: Not found

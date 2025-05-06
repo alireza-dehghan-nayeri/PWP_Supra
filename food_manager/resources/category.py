@@ -5,14 +5,17 @@ This module defines resources for handling categories, including
 retrieving all categories and creating, updating, and deleting a single
 category.
 """
+import os
 
+from flasgger import swag_from
 from flask_restful import Resource
 from flask import request, url_for, make_response, Response
 from jsonschema import validate, ValidationError
 from werkzeug.exceptions import NotFound
 
 from food_manager.builder import FoodManagerBuilder
-from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, CATEGORY_PROFILE
+from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, CATEGORY_PROFILE, DOC_FOLDER
+
 from food_manager.db_operations import (
     create_category, get_category_by_id, get_all_categories, update_category,
     delete_category
@@ -28,7 +31,7 @@ class CategoryListResource(Resource):
     Resource for handling operations on the list of categories.
     This includes retrieving all categories (GET) and creating a new category (POST).
     """
-
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}category/CategoryListResource/get.yml")
     def get(self):
         """
         Handle GET requests to retrieve all categories.
@@ -51,6 +54,7 @@ class CategoryListResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}category/CategoryListResource/post.yml")
     def post(self):
         """
         Handle POST requests to create a new category.
@@ -95,6 +99,7 @@ class CategoryResource(Resource):
     This includes retrieving, updating, and deleting a category by its ID.
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}category/CategoryResource/get.yml")
     def get(self, category_id):
         """
         Handle GET requests to retrieve a specific category by its ID.
@@ -115,6 +120,7 @@ class CategoryResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}category/CategoryResource/put.yml")
     def put(self, category_id):
         """
         Handle PUT requests to update an existing category.
@@ -162,6 +168,7 @@ class CategoryResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}category/CategoryResource/delete.yml")
     def delete(self, category_id):
         """
         Handle DELETE requests to remove a specific category by its ID.

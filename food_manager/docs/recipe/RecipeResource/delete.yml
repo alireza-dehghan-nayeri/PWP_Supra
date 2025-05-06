@@ -1,0 +1,8 @@
+---
+parameters:
+  - $ref: '#/components/parameters/recipeId'
+responses:
+  '204':
+    description: Recipe deleted successfully (No Content)
+  '404':
+    description: Recipe not found

@@ -1,0 +1,25 @@
+---
+summary: Create a new category
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/Category'
+      example:
+        name: Dairy
+        description: Milk products
+responses:
+  '201':
+    description: Category created successfully
+    headers:
+      Location:
+        description: URL of the new category
+        schema:
+          type: string
+  '400':
+    description: Invalid input
+  '409':
+    description: Conflict (duplicate)
+  '415':
+    description: Unsupported Media Type

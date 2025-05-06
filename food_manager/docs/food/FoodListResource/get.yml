@@ -1,0 +1,11 @@
+---
+summary: Retrieve all foods
+responses:
+  '200':
+    description: An array of food items
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/Food'
