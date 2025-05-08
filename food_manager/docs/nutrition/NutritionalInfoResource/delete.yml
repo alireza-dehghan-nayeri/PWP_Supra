@@ -1,0 +1,9 @@
+---
+summary: Delete a nutritional info entry
+parameters:
+  - $ref: '#/components/parameters/nutInfoId'
+responses:
+  '204':
+    description: Deleted successfully (no content)
+  '404':
+    description: Not found

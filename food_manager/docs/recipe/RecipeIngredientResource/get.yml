@@ -1,0 +1,13 @@
+---
+summary: Retrieve a recipe (including its ingredients)
+parameters:
+  - $ref: '#/components/parameters/recipeId'
+responses:
+  '200':
+    description: Recipe with ingredients
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Recipe'
+  '404':
+    description: Recipe not found

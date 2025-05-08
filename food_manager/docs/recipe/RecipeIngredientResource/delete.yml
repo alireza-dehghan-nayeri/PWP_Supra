@@ -1,0 +1,24 @@
+---
+summary: Remove an ingredient from a recipe
+parameters:
+  - $ref: '#/components/parameters/recipeId'
+requestBody:
+  description: JSON document identifying the ingredient to remove
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required: [ingredient_id]
+        properties:
+          ingredient_id:
+            type: string
+      example:
+        ingredient_id: "flour"
+responses:
+  '200':
+    description: Ingredient removed successfully
+  '400':
+    description: Missing ingredient_id
+  '404':
+    description: Recipe or ingredient not found

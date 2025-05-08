@@ -1,0 +1,17 @@
+---
+summary: Retrieve all categories
+description: |
+  Returns a list of all category objects with hypermedia controls.
+responses:
+  '200':
+    description: A collection of category objects
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Category'
+            _links:

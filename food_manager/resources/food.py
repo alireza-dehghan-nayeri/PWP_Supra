@@ -4,14 +4,16 @@ Module for Food API endpoints.
 This module defines resources for handling food items, including
 retrieving, creating, updating, and deleting them.
 """
+import os
 
+from flasgger import swag_from
 from flask import request, url_for, make_response, Response
 from flask_restful import Resource
 from jsonschema import validate, ValidationError
 from werkzeug.exceptions import NotFound
 
 from food_manager.builder import FoodManagerBuilder
-from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, FOOD_PROFILE
+from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, FOOD_PROFILE, DOC_FOLDER
 from food_manager.db_operations import (
     create_food, get_food_by_id, get_all_foods, update_food, delete_food
 )
@@ -27,6 +29,7 @@ class FoodListResource(Resource):
     This includes retrieving all food items (GET) and creating a new food item (POST).
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}food/FoodListResource/get.yml")
     def get(self):
         """
         Handle GET requests to retrieve all food items.
@@ -49,6 +52,7 @@ class FoodListResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}food/FoodListResource/post.yml")
     def post(self):
         """
         Handle POST requests to create a new food item.
@@ -94,6 +98,7 @@ class FoodResource(Resource):
     This includes retrieving, updating, and deleting a food item by its unique ID.
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}food/FoodResource/get.yml")
     def get(self, food_id):
         """
         Handle GET requests to retrieve a specific food item by its ID.
@@ -114,6 +119,7 @@ class FoodResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}food/FoodResource/put.yml")
     def put(self, food_id):
         """
         Handle PUT requests to update an existing food item.
@@ -163,6 +169,7 @@ class FoodResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}food/FoodResource/delete.yml")
     def delete(self, food_id):
         """
         Handle DELETE requests to remove a specific food item by its ID.

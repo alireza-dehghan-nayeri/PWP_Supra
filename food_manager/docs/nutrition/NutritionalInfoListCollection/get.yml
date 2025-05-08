@@ -1,0 +1,11 @@
+---
+summary: Retrieve all nutritional info entries
+responses:
+  '200':
+    description: An array of nutritional info entries
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/NutritionalInfo'

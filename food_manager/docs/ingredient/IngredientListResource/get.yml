@@ -1,0 +1,11 @@
+---
+summary: Retrieve all ingredients
+responses:
+  '200':
+    description: An array of ingredients
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingredient'

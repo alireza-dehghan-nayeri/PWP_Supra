@@ -1,0 +1,13 @@
+---
+summary: Retrieve a single food item
+parameters:
+  - $ref: '#/components/parameters/foodId'
+responses:
+  '200':
+    description: Food object
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Food'
+  '404':
+    description: Not found

@@ -5,13 +5,16 @@ This module defines resources for handling ingredients, including retrieving,
 creating, updating, and deleting them.
 """
 
+import os
+
+from flasgger import swag_from
 from flask import request, url_for, make_response, Response
 from flask_restful import Resource
 from jsonschema import validate, ValidationError
 from werkzeug.exceptions import NotFound
 
 from food_manager.builder import FoodManagerBuilder
-from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, INGREDIENT_PROFILE
+from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, INGREDIENT_PROFILE, DOC_FOLDER
 from food_manager.db_operations import (
     create_ingredient,
     get_ingredient_by_id,
@@ -26,7 +29,8 @@ from food_manager.utils.cache import class_cache
 
 @class_cache
 class IngredientListResource(Resource):
-
+    
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}ingredient/IngredientListResource/get.yml")
     def get(self):
         """
         Handle GET requests to retrieve all ingredient items.
@@ -48,6 +52,8 @@ class IngredientListResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}ingredient/IngredientListResource/post.yml")
     def post(self):
         """
         Handle POST requests to create a new ingredient.
@@ -93,6 +99,7 @@ class IngredientListResource(Resource):
 @class_cache
 class IngredientResource(Resource):
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}ingredient/IngredientResource/get.yml")
     def get(self, ingredient_id):
         """
         Handle GET requests to retrieve a specific ingredient by its ID.
@@ -112,6 +119,7 @@ class IngredientResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}ingredient/IngredientResource/put.yml")
     def put(self, ingredient_id):
         """
         Handle PUT requests to update an existing ingredient.
@@ -160,6 +168,7 @@ class IngredientResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}ingredient/IngredientResource/delete.yml")
     def delete(self, ingredient_id):
         """
         Handle DELETE requests to remove a specific ingredient by its ID.

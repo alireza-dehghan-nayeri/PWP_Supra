@@ -1,0 +1,25 @@
+---
+summary: Create a new food item
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/Food'
+      example:
+        name: Yogurt
+        category: Dairy
+responses:
+  '201':
+    description: Food created
+    headers:
+      Location:
+        description: URL of new food
+        schema:
+          type: string
+  '400':
+    description: Invalid input
+  '409':
+    description: Conflict
+  '415':
+    description: Unsupported Media Type

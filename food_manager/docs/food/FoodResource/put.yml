@@ -1,0 +1,25 @@
+---
+summary: Update a food item
+parameters:
+  - $ref: '#/components/parameters/foodId'
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/Food'
+responses:
+  '200':
+    description: Updated food
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Food'
+  '400':
+    description: Invalid input
+  '404':
+    description: Not found
+  '409':
+    description: Conflict
+  '415':
+    description: Unsupported Media Type

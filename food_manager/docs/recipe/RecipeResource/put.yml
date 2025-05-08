@@ -1,0 +1,27 @@
+---
+parameters:
+  - $ref: '#/components/parameters/recipeId'
+requestBody:
+  description: JSON object with updated recipe fields
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/Recipe'
+      example:
+        food_id: "banana-2"
+        instruction: "Mash bananas; mix with yogurt."
+        prep_time: 5
+        cook_time: 0
+        servings: 2
+responses:
+  '200':
+    description: Updated recipe object
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Recipe'
+  '400':
+    description: Invalid input
+  '404':
+    description: Recipe not found

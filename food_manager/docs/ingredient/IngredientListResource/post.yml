@@ -1,0 +1,24 @@
+---
+summary: Create a new ingredient
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/Ingredient'
+      example:
+        name: Sugar
+responses:
+  '201':
+    description: Ingredient created
+    headers:
+      Location:
+        description: URL of new ingredient
+        schema:
+          type: string
+  '400':
+    description: Invalid input
+  '409':
+    description: Conflict
+  '415':
+    description: Unsupported Media Type

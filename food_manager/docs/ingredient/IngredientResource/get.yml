@@ -1,0 +1,13 @@
+---
+summary: Retrieve a single ingredient
+parameters:
+  - $ref: '#/components/parameters/ingredientId'
+responses:
+  '200':
+    description: Ingredient object
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Ingredient'
+  '404':
+    description: Not found

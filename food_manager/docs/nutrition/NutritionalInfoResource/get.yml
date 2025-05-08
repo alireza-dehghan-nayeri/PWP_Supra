@@ -1,0 +1,13 @@
+---
+summary: Retrieve a single nutritional info entry
+parameters:
+  - $ref: '#/components/parameters/nutInfoId'
+responses:
+  '200':
+    description: Nutritional info object
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/NutritionalInfo'
+  '404':
+    description: Not found

@@ -1,0 +1,142 @@
+---
+openapi: 3.0.4
+info:
+  title: Food Manager API
+  version: "1.0.0"
+  description: API to manage foods, recipes, categories, ingredients, and nutritional info.
+  contact:
+    name: PWP Course Staff
+    email: pwp-course@lists.oulu.fi
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+# Serve all paths relative to the app root. Flask will still mount them under /api via your blueprint.
+servers:
+  - url: /
+
+components:
+  parameters:
+    foodId:
+      name: food
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique identifier for a food item
+    recipeId:
+      name: recipe
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique identifier for a recipe
+    ingredientId:
+      name: ingredient
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique identifier for an ingredient
+    categoryId:
+      name: category
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique identifier for a category
+    nutInfoId:
+      name: nutritional_info
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique identifier for nutritional info
+
+  schemas:
+    Food:
+      type: object
+      required:
+        - name
+        - category
+      properties:
+        id:
+          type: string
+          example: "apple-1"
+        name:
+          type: string
+          example: Apple
+        category:
+          type: string
+          example: Fruit
+
+    Recipe:
+      type: object
+      required:
+        - name
+        - ingredients
+      properties:
+        id:
+          type: string
+          example: "pasta-alfredo"
+        name:
+          type: string
+          example: Pasta Alfredo
+        ingredients:
+          type: array
+          items:
+            type: string
+
+    Ingredient:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          example: "flour"
+        name:
+          type: string
+          example: Flour
+
+    Category:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          example: "dairy"
+        name:
+          type: string
+          example: Dairy
+        description:
+          type: string
+          example: "Milk products"
+
+    NutritionalInfo:
+      type: object
+      required:
+        - calories
+      properties:
+        id:
+          type: string
+          example: "nut-1"
+        calories:
+          type: number
+          example: 200
+        fats:
+          type: number
+          example: 10
+        carbs:
+          type: number
+          example: 20
+        protein:
+          type: number
+          example: 5
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY

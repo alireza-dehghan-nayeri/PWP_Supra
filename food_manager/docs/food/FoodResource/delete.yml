@@ -1,0 +1,9 @@
+---
+summary: Delete a food item
+parameters:
+  - $ref: '#/components/parameters/foodId'
+responses:
+  '204':
+    description: Deleted successfully (no content)
+  '404':
+    description: Not found

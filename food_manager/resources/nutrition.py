@@ -4,14 +4,16 @@ Module for Nutritional Information API endpoints.
 This module defines resources for handling nutritional information items.
 It supports GET (list and detail), POST, PUT, and DELETE operations.
 """
+import os
 
+from flasgger import swag_from
 from flask import request, url_for, make_response, Response
 from flask_restful import Resource
 from jsonschema import validate, ValidationError
 from werkzeug.exceptions import NotFound
 
 from food_manager.builder import FoodManagerBuilder
-from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, NUTRITION_PROFILE
+from food_manager.constants import NAMESPACE, LINK_RELATIONS_URL, NUTRITION_PROFILE, DOC_FOLDER
 from food_manager.db_operations import (
     create_nutritional_info, get_all_nutrition, get_nutritional_info_by_id,
     update_nutritional_info, delete_nutritional_info
@@ -29,6 +31,7 @@ class NutritionalInfoListResource(Resource):
     nutritional info item (POST).
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}nutrition/NutritionalInfoListCollection/get.yml")
     def get(self):
         """
         Handle GET requests to retrieve all nutritional information items.
@@ -51,6 +54,7 @@ class NutritionalInfoListResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}nutrition/NutritionalInfoListCollection/post.yml")
     def post(self):
         """
         Handle POST requests to create a new nutritional information item.
@@ -105,6 +109,7 @@ class NutritionalInfoResource(Resource):
     This includes retrieving, updating, and deleting a nutritional info item by its ID.
     """
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}nutrition/NutritionalInfoResource/get.yml")
     def get(self, nutritional_info_id):
         """
         Handle GET requests to retrieve a specific nutritional info item by its ID.
@@ -125,6 +130,7 @@ class NutritionalInfoResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}nutrition/NutritionalInfoResource/put.yml")
     def put(self, nutritional_info_id):
         """
         Handle PUT requests to update an existing nutritional info item.
@@ -175,6 +181,7 @@ class NutritionalInfoResource(Resource):
         except Exception as e:
             return internal_server_error(e)
 
+    @swag_from(os.getcwd() + f"{DOC_FOLDER}nutrition/NutritionalInfoResource/delete.yml")
     def delete(self, nutritional_info_id):
         """
         Handle DELETE requests to remove a specific nutritional info item by its ID.
