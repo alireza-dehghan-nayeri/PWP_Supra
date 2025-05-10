@@ -78,11 +78,6 @@ sqlite3 food-manager.db .dump > dump.sql
 flask --app food_manager:create_app run 
 ```
 
-#### 📌 Run the Flask Client App
-```sh
-After running the server, client shall be run in another terminal (using the same virtual environment) by executing command 
-python food_manager/client.py
-```
 Hit the Url with Prefix: /api/ e.g., http://127.0.0.1:5000/api/foods/
 
 #### 📌 Running Api Docs
@@ -97,6 +92,14 @@ flask --app food_manager:create_app clear-db
 ```
 ## Test with Postman
 The Postman collection JSON file is located under the Postman directory, which can be imported to Postman.
+
+## Run the Flask Client App
+After running the server, the client shall be run in another terminal by executing the following commands:
+```sh
+cd client
+pip install -r requirements.txt
+python client.py
+```
 
 ## Run PyTest Instructions
 
