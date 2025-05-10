@@ -77,6 +77,12 @@ sqlite3 food-manager.db .dump > dump.sql
 ```sh
 flask --app food_manager:create_app run 
 ```
+
+#### 📌 Run the Flask Client App
+```sh
+After running the server, client shall be run in another terminal (using the same virtual environment) by executing command 
+python food_manager/client.py
+```
 Hit the Url with Prefix: /api/ e.g., http://127.0.0.1:5000/api/foods/
 
 #### 📌 Running Api Docs
