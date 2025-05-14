@@ -8,9 +8,14 @@ information using Flask's test client.
 """
 
 import json
+from unittest.mock import patch
+
 import pytest
 from flask.testing import FlaskClient
+from jsonschema import ValidationError
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import NotFound
+
 
 # ------------------------------------------------------------------------------
 # Pytest Fixtures
@@ -347,6 +352,20 @@ class TestFoodList:
             assert "name" in body[0]
             assert "food_id" in body[0]
 
+    def test_get_internal_server_error(self, client: FlaskClient):
+        """
+        Test GET request when an internal error occurs in get_all_foods.
+
+        Verifies that the response returns a 500 status and correct error structure.
+        """
+        with patch("food_manager.resources.food.get_all_foods", side_effect=Exception("Database error")):
+            resp = client.get(self.RESOURCE_URL)
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert isinstance(body, dict)
+            assert "error" in body  # Assuming internal_server_error() returns {"error": ...}
+            assert "An unexpected error occurred." in body.get("error", "")
+
     def test_post(self, client: FlaskClient):
         """
         Test POST request to create a new food item.
@@ -378,6 +397,64 @@ class TestFoodList:
             print("Server Error:", resp.data.decode())
         assert resp.status_code == 400
 
+    def test_post_unsupported_media_type(self, client: FlaskClient):
+        """
+        Test POST request with invalid content type (not JSON).
+
+        Verifies that a 415 Unsupported Media Type response is returned with correct Mason format.
+        """
+        headers = {
+            "Content-Type": "text/plain"
+        }
+        data = "just a plain string"
+
+        resp = client.post(self.RESOURCE_URL, data=data, headers=headers)
+        assert resp.status_code == 415
+
+        body = json.loads(resp.data)
+        assert isinstance(body, dict)
+
+        assert "@error" in body
+        error = body["@error"]
+        assert "@message" in error
+        assert "Unsupported Media Type" in error["@message"]
+        assert "@messages" in error
+        assert any("application/json" in msg for msg in error["@messages"])
+
+        assert "@controls" in body
+        assert "profile" in body["@controls"]
+
+    def test_post_conflict_value_error(self, client: FlaskClient):
+        """
+        Test POST request that raises ValueError and returns a 409 Conflict error.
+        """
+
+
+        with patch("food_manager.resources.food.create_food", side_effect=ValueError("Food already exists")):
+            resp = client.post(self.RESOURCE_URL, json=get_food_json())
+            assert resp.status_code == 409
+
+            body = json.loads(resp.data)
+            assert "@error" in body
+            error = body["@error"]
+            assert "@message" in error
+            assert "Conflict" in error["@message"]
+            assert "@messages" in error
+            assert any("Food already exists" in msg for msg in error["@messages"])
+
+    def test_post_internal_server_error(self, client: FlaskClient):
+        """
+        Test POST request that triggers a general exception and returns 500 Internal Server Error.
+        """
+
+        with patch("food_manager.resources.food.create_food", side_effect=Exception("DB connection failed")):
+            resp = client.post(self.RESOURCE_URL, json=get_food_json())
+            assert resp.status_code == 500
+
+            body = json.loads(resp.data)
+            assert isinstance(body, dict)
+            assert body.get("error") == "An unexpected error occurred."
+            assert "DB connection failed" in body.get("details", "")
 
 class TestFoodItem:
     """
@@ -405,6 +482,19 @@ class TestFoodItem:
         assert "food_id" in body
         assert body["food_id"] == 1
 
+    def test_get_food_not_found(self, client: FlaskClient):
+        """Test GET for a non-existent food item returns 404."""
+        with patch("food_manager.resources.food.get_food_by_id", side_effect=NotFound()):
+            resp = client.get(f"{self.RESOURCE_URL}/9999")
+            assert resp.status_code == 404
+
+    def test_get_food_internal_error(self, client: FlaskClient):
+        """Test GET food that raises unexpected error returns 500."""
+        with patch("food_manager.resources.food.get_food_by_id", side_effect=Exception("boom")):
+            resp = client.get(f"{self.RESOURCE_URL}/1")
+            assert resp.status_code == 404
+
+
     def test_put(self, client: FlaskClient, setup_food):
         """
         Test PUT request to update a food item.
@@ -430,6 +520,82 @@ class TestFoodItem:
         body = json.loads(resp.data)
         assert body["name"] == "Updated Food Name"
 
+    def test_put_unsupported_media_type(self, client: FlaskClient):
+        """Test PUT with non-JSON content returns 415."""
+        with patch("food_manager.resources.food.update_food"):
+            resp = client.put(f"{self.RESOURCE_URL}", data="not json", headers={"Content-Type": "text/plain"})
+            assert resp.status_code == 415
+            body = json.loads(resp.data)
+            assert "@error" in body
+            assert "Unsupported Media Type" in body["@error"].get("@message", "")
+
+    def test_put_validation_error(self, client: FlaskClient):
+        """
+        Test PUT request that triggers a schema ValidationError.
+
+        Verifies a 400 Bad Request is returned with proper error message.
+        """
+        data = get_food_json()
+
+        with patch("food_manager.resources.food.validate", side_effect=ValidationError("Missing required field: name")):
+            resp = client.put("/api/foods/1/", json=data)
+
+        assert resp.status_code == 400
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Invalid input"
+        assert "Missing required field: name" in body["@error"]["@messages"][0]
+
+
+    def test_put_food_not_found(self, client: FlaskClient):
+        """
+        Test PUT request that triggers NotFound error.
+
+        Verifies a 404 is returned with correct error formatting.
+        """
+        data = get_food_json()
+
+        with patch("food_manager.resources.food.update_food", side_effect=NotFound()):
+            resp = client.put("/api/foods/9999/", json=data)
+
+        assert resp.status_code == 404
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Food not found"
+        assert "No food item with ID 9999" in body["@error"]["@messages"][0]
+
+    def test_put_conflict_value_error(self, client: FlaskClient):
+        """
+        Test PUT request that raises ValueError and returns 409 Conflict.
+        """
+        data = get_food_json()
+
+        with patch("food_manager.resources.food.update_food", side_effect=ValueError("Duplicate food name")):
+            resp = client.put("/api/foods/1/", json=data)
+
+        assert resp.status_code == 409
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Conflict"
+        assert "Duplicate food name" in body["@error"]["@messages"][0]
+
+
+    def test_put_internal_server_error(self, client: FlaskClient):
+        """
+        Test PUT request that triggers a general exception and returns 500.
+        """
+        data = get_food_json()
+
+        with patch("food_manager.resources.food.update_food", side_effect=Exception("Unexpected crash")):
+            resp = client.put("/api/foods/1/", json=data)
+
+        assert resp.status_code == 500
+        body = json.loads(resp.data)
+        assert isinstance(body, dict)
+        assert body.get("error") == "An unexpected error occurred."
+        assert "Unexpected crash" in body.get("details", "")
+
+
     def test_delete(self, client: FlaskClient):
         """
         Test DELETE request to remove a food item.
@@ -447,6 +613,35 @@ class TestFoodItem:
         resp = client.delete(self.INVALID_URL)
         assert resp.status_code == 404
 
+    def test_delete_food_not_found(self, client: FlaskClient):
+        """
+        Test DELETE request that raises NotFound error.
+
+        Verifies that a 404 response is returned with correct error formatting.
+        """
+        with patch("food_manager.resources.food.delete_food", side_effect=NotFound()):
+            resp = client.delete("/api/foods/9999/")
+
+        assert resp.status_code == 404
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Food not found"
+        assert "No food item with ID 9999" in body["@error"]["@messages"][0]
+
+    def test_delete_food_internal_server_error(self, client: FlaskClient):
+        """
+        Test DELETE request that raises a generic exception.
+
+        Verifies that a 500 response is returned with a standard error message.
+        """
+        with patch("food_manager.resources.food.delete_food", side_effect=Exception("Database unreachable")):
+            resp = client.delete("/api/foods/1/")
+
+        assert resp.status_code == 500
+        body = json.loads(resp.data)
+        assert isinstance(body, dict)
+        assert body.get("error") == "An unexpected error occurred."
+        assert "Database unreachable" in body.get("details", "")
 
 class TestCategoryList:
     """
@@ -471,6 +666,20 @@ class TestCategoryList:
         if len(body["items"]) > 0:
             assert "name" in body[0]
             assert "category_id" in body[0]
+
+    def test_get_category_list_internal_error(self, client: FlaskClient):
+        """
+        Test GET /api/categories/ when an internal error occurs.
+
+        Verifies that a 500 Internal Server Error is returned with correct structure.
+        """
+        with patch("food_manager.resources.category.get_all_categories", side_effect=Exception("Unexpected failure")):
+            resp = client.get("/api/categories/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Unexpected failure" in body["details"]
+
 
     def test_post(self, client: FlaskClient):
         """
@@ -497,6 +706,44 @@ class TestCategoryList:
         resp = client.post(self.RESOURCE_URL, json=invalid)
         assert resp.status_code == 400
 
+    def test_post_category_unsupported_media_type(self, client: FlaskClient):
+        """
+        Test POST /api/categories/ with invalid content-type (not JSON).
+
+        Verifies that a 415 Unsupported Media Type response is returned.
+        """
+        resp = client.post("/api/categories/", data="notjson", headers={"Content-Type": "text/plain"})
+        assert resp.status_code == 415
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Unsupported Media Type"
+        assert any("application/json" in msg for msg in body["@error"]["@messages"])
+
+    def test_post_category_conflict_value_error(self, client: FlaskClient):
+        """
+        Test POST /api/categories/ that raises ValueError and returns 409 Conflict.
+        """
+        with patch("food_manager.resources.category.create_category", side_effect=ValueError("Category already exists")):
+            resp = client.post("/api/categories/", json=get_category_json())
+            assert resp.status_code == 409
+            body = json.loads(resp.data)
+            assert "@error" in body
+            assert body["@error"]["@message"] == "Conflict"
+            assert "Category already exists" in body["@error"]["@messages"][0]
+
+    def test_post_category_internal_server_error(self, client: FlaskClient):
+        """
+        Test POST /api/categories/ that raises a general Exception.
+
+        Verifies a 500 Internal Server Error is returned with proper structure.
+        """
+        with patch("food_manager.resources.category.create_category", side_effect=Exception("Database crash")):
+            resp = client.post("/api/categories/", json=get_category_json())
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Database crash" in body["details"]
+
 
 class TestCategoryItem:
     """
@@ -520,6 +767,97 @@ class TestCategoryItem:
         assert body["category_id"] == 1
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
+
+    def test_get_category_not_found(self, client: FlaskClient):
+        """
+        Test GET /api/categories/<id>/ that raises NotFound.
+
+        Verifies a 404 response with correct error message.
+        """
+        with patch("food_manager.resources.category.get_category_by_id", side_effect=NotFound()):
+            resp = client.get("/api/categories/999/")
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Category not found"
+            assert "No category item with ID 999" in body["@error"]["@messages"][0]
+
+    def test_get_category_internal_server_error(self, client: FlaskClient):
+        """
+        Test GET /api/categories/<id>/ that raises a general Exception.
+
+        Verifies a 500 Internal Server Error is returned.
+        """
+        with patch("food_manager.resources.category.get_category_by_id", side_effect=Exception("DB exploded")):
+            resp = client.get("/api/categories/1/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "DB exploded" in body["details"]
+
+    def test_put_category_unsupported_media_type(self, client: FlaskClient):
+        """
+        Test PUT /api/categories/<id>/ with invalid content-type.
+
+        Verifies a 415 Unsupported Media Type is returned.
+        """
+        resp = client.put("/api/categories/1/", data="notjson", headers={"Content-Type": "text/plain"})
+        assert resp.status_code == 415
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Unsupported Media Type"
+
+    def test_put_category_validation_error(self, client: FlaskClient):
+        """
+        Test PUT /api/categories/<id>/ that raises ValidationError.
+
+        Verifies a 400 Invalid input is returned.
+        """
+        with patch("food_manager.resources.category.validate", side_effect=ValidationError("Missing name")):
+            resp = client.put("/api/categories/1/", json=get_category_json())
+            assert resp.status_code == 400
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Invalid input"
+            assert "Missing name" in body["@error"]["@messages"][0]
+
+    def test_put_category_not_found(self, client: FlaskClient):
+        """
+        Test PUT /api/categories/<id>/ that raises NotFound.
+
+        Verifies a 404 Category not found error is returned.
+        """
+        with patch("food_manager.resources.category.update_category", side_effect=NotFound()):
+            resp = client.put("/api/categories/999/", json=get_category_json())
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Category not found"
+            assert "No category item with ID 999" in body["@error"]["@messages"][0]
+
+    def test_put_category_conflict_value_error(self, client: FlaskClient):
+        """
+        Test PUT /api/categories/<id>/ that raises ValueError.
+
+        Verifies a 409 Conflict error is returned.
+        """
+        with patch("food_manager.resources.category.update_category", side_effect=ValueError("Duplicate category")):
+            resp = client.put("/api/categories/1/", json=get_category_json())
+            assert resp.status_code == 409
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Conflict"
+            assert "Duplicate category" in body["@error"]["@messages"][0]
+
+    def test_put_category_internal_server_error(self, client: FlaskClient):
+        """
+        Test PUT /api/categories/<id>/ that raises a general Exception.
+
+        Verifies a 500 Internal Server Error is returned.
+        """
+        with patch("food_manager.resources.category.update_category", side_effect=Exception("Boom")):
+            resp = client.put("/api/categories/1/", json=get_category_json())
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Boom" in body["details"]
+
 
     def test_put(self, client: FlaskClient, setup_category):
         """
@@ -556,6 +894,32 @@ class TestCategoryItem:
         resp = client.delete(delete_url)
         assert resp.status_code == 204
 
+    def test_delete_category_not_found(self, client: FlaskClient):
+        """
+        Test DELETE /api/categories/<id>/ that raises NotFound.
+
+        Verifies a 404 error is returned with proper formatting.
+        """
+        with patch("food_manager.resources.category.delete_category", side_effect=NotFound()):
+            resp = client.delete("/api/categories/999/")
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Category not found"
+            assert "No category item with ID 999" in body["@error"]["@messages"][0]
+
+    def test_delete_category_internal_server_error(self, client: FlaskClient):
+        """
+        Test DELETE /api/categories/<id>/ that raises a general exception.
+
+        Verifies a 500 Internal Server Error response is returned.
+        """
+        with patch("food_manager.resources.category.delete_category", side_effect=Exception("Failed to delete")):
+            resp = client.delete("/api/categories/1/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Failed to delete" in body["details"]
+
 
 class TestIngredientList:
     """
@@ -580,6 +944,20 @@ class TestIngredientList:
         if len(body["items"]) > 0:
             assert "name" in body[0]
             assert "ingredient_id" in body[0]
+
+    def test_get_ingredient_list_internal_error(self, client: FlaskClient):
+        """
+        Test GET /api/ingredients/ when an internal error occurs.
+
+        Verifies that a 500 Internal Server Error is returned.
+        """
+        with patch("food_manager.resources.ingredient.get_all_ingredients", side_effect=Exception("DB down")):
+            resp = client.get("/api/ingredients/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "DB down" in body["details"]
+
 
     def test_post(self, client: FlaskClient):
         """
@@ -607,6 +985,57 @@ class TestIngredientList:
         resp = client.post(self.RESOURCE_URL, json=invalid)
         assert resp.status_code == 400
 
+    def test_post_ingredient_unsupported_media_type(self, client: FlaskClient):
+        """
+        Test POST /api/ingredients/ with invalid content-type.
+
+        Verifies that a 415 Unsupported Media Type is returned.
+        """
+        resp = client.post("/api/ingredients/", data="notjson", headers={"Content-Type": "text/plain"})
+        assert resp.status_code == 415
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Unsupported Media Type"
+
+    def test_post_ingredient_validation_error(self, client: FlaskClient):
+        """
+        Test POST /api/ingredients/ that raises ValidationError.
+
+        Verifies a 400 Invalid input error is returned.
+        """
+        with patch("food_manager.resources.ingredient.validate", side_effect=ValidationError("Missing name")):
+            resp = client.post("/api/ingredients/", json=get_ingredient_json())
+            assert resp.status_code == 400
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Invalid input"
+            assert "Missing name" in body["@error"]["@messages"][0]
+
+    def test_post_ingredient_conflict_value_error(self, client: FlaskClient):
+        """
+        Test POST /api/ingredients/ that raises ValueError.
+
+        Verifies a 409 Conflict error is returned.
+        """
+        with patch("food_manager.resources.ingredient.create_ingredient", side_effect=ValueError("Ingredient already exists")):
+            resp = client.post("/api/ingredients/", json=get_ingredient_json())
+            assert resp.status_code == 409
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Conflict"
+            assert "Ingredient already exists" in body["@error"]["@messages"][0]
+
+    def test_post_ingredient_internal_server_error(self, client: FlaskClient):
+        """
+        Test POST /api/ingredients/ that raises a general exception.
+
+        Verifies a 500 Internal Server Error is returned.
+        """
+        with patch("food_manager.resources.ingredient.create_ingredient", side_effect=Exception("Crash")):
+            resp = client.post("/api/ingredients/", json=get_ingredient_json())
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Crash" in body["details"]
+
 
 class TestIngredientItem:
     """
@@ -631,6 +1060,32 @@ class TestIngredientItem:
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
 
+    def test_get_ingredient_not_found(self, client: FlaskClient):
+        """
+        Test GET /api/ingredients/<id>/ that raises NotFound.
+
+        Verifies that a 404 response is returned with correct structure.
+        """
+        with patch("food_manager.resources.ingredient.get_ingredient_by_id", side_effect=NotFound()):
+            resp = client.get("/api/ingredients/999/")
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Ingredient not found"
+
+    def test_get_ingredient_internal_server_error(self, client: FlaskClient):
+        """
+        Test GET /api/ingredients/<id>/ that raises a general exception.
+
+        Verifies a 500 response with internal error structure.
+        """
+        with patch("food_manager.resources.ingredient.get_ingredient_by_id", side_effect=Exception("DB fail")):
+            resp = client.get("/api/ingredients/1/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "DB fail" in body["details"]
+
+
     def test_put(self, client: FlaskClient, setup_ingredient):
         """
         Test PUT request to update an ingredient.
@@ -653,6 +1108,71 @@ class TestIngredientItem:
         body = json.loads(resp.data)
         assert body["name"] == "Updated Ingredient Name"
 
+    def test_put_ingredient_unsupported_media_type(self, client: FlaskClient):
+        """
+        Test PUT /api/ingredients/<id>/ with invalid content-type.
+
+        Verifies a 415 Unsupported Media Type response.
+        """
+        resp = client.put("/api/ingredients/1/", data="notjson", headers={"Content-Type": "text/plain"})
+        assert resp.status_code == 415
+        body = json.loads(resp.data)
+        assert body["@error"]["@message"] == "Unsupported Media Type"
+
+    def test_put_ingredient_validation_error(self, client: FlaskClient):
+        """
+        Test PUT /api/ingredients/<id>/ that raises ValidationError.
+
+        Verifies a 400 Invalid input response.
+        """
+        with patch("food_manager.resources.ingredient.validate", side_effect=ValidationError("Missing name")):
+            resp = client.put("/api/ingredients/1/", json=get_ingredient_json())
+            assert resp.status_code == 400
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Invalid input"
+            assert "Missing name" in body["@error"]["@messages"][0]
+
+    def test_put_ingredient_not_found(self, client: FlaskClient):
+        """
+        Test PUT /api/ingredients/<id>/ that raises NotFound.
+
+        Verifies a 404 Ingredient not found error.
+        """
+        with patch("food_manager.resources.ingredient.update_ingredient", side_effect=NotFound()):
+            resp = client.put("/api/ingredients/999/", json=get_ingredient_json())
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Ingredient not found"
+            assert "No ingredient item with ID 999" in body["@error"]["@messages"][0]
+
+    def test_put_ingredient_conflict_value_error(self, client: FlaskClient):
+        """
+        Test PUT /api/ingredients/<id>/ that raises ValueError.
+
+        Verifies a 409 Conflict response.
+        """
+        with patch("food_manager.resources.ingredient.update_ingredient", side_effect=ValueError("Name exists")):
+            resp = client.put("/api/ingredients/1/", json=get_ingredient_json())
+            assert resp.status_code == 409
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Conflict"
+            assert "Name exists" in body["@error"]["@messages"][0]
+
+    def test_put_ingredient_internal_server_error(self, client: FlaskClient):
+        """
+        Test PUT /api/ingredients/<id>/ that raises a general exception.
+
+        Verifies a 500 Internal Server Error is returned.
+        """
+        with patch("food_manager.resources.ingredient.update_ingredient", side_effect=Exception("Update failed")):
+            resp = client.put("/api/ingredients/1/", json=get_ingredient_json())
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Update failed" in body["details"]
+
+
+
     def test_delete(self, client: FlaskClient):
         """
         Test DELETE request to remove an ingredient.
@@ -667,6 +1187,33 @@ class TestIngredientItem:
         assert resp.status_code == 204
         resp = client.delete(self.INVALID_URL)
         assert resp.status_code == 404
+
+    def test_delete_ingredient_not_found(self, client: FlaskClient):
+        """
+        Test DELETE /api/ingredients/<id>/ that raises NotFound.
+
+        Verifies that a 404 error is returned with correct formatting.
+        """
+        with patch("food_manager.resources.ingredient.delete_ingredient", side_effect=NotFound()):
+            resp = client.delete("/api/ingredients/999/")
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Ingredient not found"
+            assert "No ingredient item with ID 999" in body["@error"]["@messages"][0]
+
+    def test_delete_ingredient_internal_server_error(self, client: FlaskClient):
+        """
+        Test DELETE /api/ingredients/<id>/ that raises a general exception.
+
+        Verifies a 500 Internal Server Error is returned with correct structure.
+        """
+        with patch("food_manager.resources.ingredient.delete_ingredient", side_effect=Exception("Crash on delete")):
+            resp = client.delete("/api/ingredients/1/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Crash on delete" in body["details"]
+
 
 
 class TestRecipeList:
@@ -692,6 +1239,68 @@ class TestRecipeList:
         if len(body["items"]) > 0:
             assert "recipe_id" in body[0]
             assert "food_id" in body[0]
+
+    def test_get_recipe_list_internal_error(self, client: FlaskClient):
+        """
+        Test GET request to /api/recipes/ when an internal error occurs.
+
+        Verifies that a 500 Internal Server Error is returned.
+        """
+        with patch("food_manager.resources.recipe.get_all_recipes", side_effect=Exception("DB crashed")):
+            resp = client.get("/api/recipes/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body.get("error") == "An unexpected error occurred."
+            assert "DB crashed" in body.get("details", "")
+
+    def test_post_recipe_unsupported_media_type(self, client: FlaskClient):
+        """
+        Test POST request to /api/recipes/ with invalid content type.
+
+        Verifies that a 415 Unsupported Media Type response is returned.
+        """
+        headers = {"Content-Type": "text/plain"}
+        data = "invalid format"
+
+        resp = client.post("/api/recipes/", data=data, headers=headers)
+
+        assert resp.status_code == 415
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Unsupported Media Type"
+        assert any("application/json" in msg for msg in body["@error"]["@messages"])
+        assert "@controls" in body
+        assert "profile" in body["@controls"]
+
+    def test_post_recipe_conflict_value_error(self, client: FlaskClient):
+        """
+        Test POST request to /api/recipes/ that triggers a ValueError and returns 409 Conflict.
+        """
+        valid = get_recipe_json()
+
+        with patch("food_manager.resources.recipe.create_recipe", side_effect=ValueError("Recipe already exists")):
+            resp = client.post("/api/recipes/", json=valid)
+
+        assert resp.status_code == 409
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Conflict"
+        assert "Recipe already exists" in body["@error"]["@messages"][0]
+
+    def test_post_recipe_internal_server_error(self, client: FlaskClient):
+        """
+        Test POST request to /api/recipes/ that triggers a general Exception and returns 500.
+        """
+        valid = get_recipe_json()
+
+        with patch("food_manager.resources.recipe.create_recipe", side_effect=Exception("Unexpected failure")):
+            resp = client.post("/api/recipes/", json=valid)
+
+        assert resp.status_code == 500
+        body = json.loads(resp.data)
+        assert body["error"] == "An unexpected error occurred."
+        assert "Unexpected failure" in body.get("details", "")
+
 
     def test_post(self, client: FlaskClient):
         """
@@ -744,6 +1353,32 @@ class TestRecipeItem:
         resp = client.get("/api/recipes/invalid/")
         assert resp.status_code == 404
 
+    def test_get_recipe_not_found(self, client: FlaskClient):
+        """
+        Test GET /api/recipes/<id>/ that raises NotFound.
+
+        Verifies that a 404 response is returned with correct error structure.
+        """
+        with patch("food_manager.resources.recipe.get_recipe_by_id", side_effect=NotFound()):
+            resp = client.get("/api/recipes/999/")
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert body["@error"]["@message"] == "Recipe not found"
+            assert "No Recipe item with ID 999" in body["@error"]["@messages"][0]
+
+    def test_get_recipe_internal_server_error(self, client: FlaskClient):
+        """
+        Test GET /api/recipes/<id>/ that raises a general Exception.
+
+        Verifies a 500 response with error details.
+        """
+        with patch("food_manager.resources.recipe.get_recipe_by_id", side_effect=Exception("DB crash")):
+            resp = client.get("/api/recipes/1/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "DB crash" in body["details"]
+
     def test_put(self, client: FlaskClient, setup_recipe):
         """
         Test PUT request to update a recipe.
@@ -770,6 +1405,75 @@ class TestRecipeItem:
         assert body["prep_time"] == 25
         assert body["cook_time"] == 40
 
+    def test_put_recipe_unsupported_media_type(self, client: FlaskClient):
+        """
+        Test PUT /api/recipes/<id>/ with invalid content-type (not JSON).
+
+        Verifies a 415 Unsupported Media Type error is returned.
+        """
+        resp = client.put("/api/recipes/1/", data="notjson", headers={"Content-Type": "text/plain"})
+        assert resp.status_code == 415
+        body = json.loads(resp.data)
+        assert "@error" in body
+        assert body["@error"]["@message"] == "Unsupported Media Type"
+        assert any("application/json" in msg for msg in body["@error"]["@messages"])
+
+    def test_put_recipe_validation_error(self, client: FlaskClient):
+        """
+        Test PUT /api/recipes/<id>/ that raises ValidationError.
+
+        Verifies that a 400 Invalid input error is returned.
+        """
+        with patch("food_manager.resources.recipe.validate", side_effect=ValidationError("Missing servings")):
+            resp = client.put("/api/recipes/1/", json=get_recipe_json())
+            assert resp.status_code == 400
+            body = json.loads(resp.data)
+            assert "@error" in body
+            assert body["@error"]["@message"] == "Invalid input"
+            assert "Missing servings" in body["@error"]["@messages"][0]
+
+
+    def test_put_recipe_not_found(self, client: FlaskClient):
+        """
+        Test PUT /api/recipes/<id>/ that raises NotFound.
+
+        Verifies that a 404 error is returned with correct formatting.
+        """
+        with patch("food_manager.resources.recipe.update_recipe", side_effect=NotFound()):
+            resp = client.put("/api/recipes/999/", json=get_recipe_json())
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert "@error" in body
+            assert body["@error"]["@message"] == "Recipe not found"
+            assert "No Recipe item with ID 999" in body["@error"]["@messages"][0]
+
+
+    def test_put_recipe_conflict_value_error(self, client: FlaskClient):
+        """
+        Test PUT /api/recipes/<id>/ that raises ValueError and returns 409 Conflict.
+        """
+        with patch("food_manager.resources.recipe.update_recipe", side_effect=ValueError("Duplicate recipe")):
+            resp = client.put("/api/recipes/1/", json=get_recipe_json())
+            assert resp.status_code == 409
+            body = json.loads(resp.data)
+            assert "@error" in body
+            assert body["@error"]["@message"] == "Conflict"
+            assert "Duplicate recipe" in body["@error"]["@messages"][0]
+
+
+    def test_put_recipe_internal_server_error(self, client: FlaskClient):
+        """
+        Test PUT /api/recipes/<id>/ that raises a general Exception.
+
+        Verifies a 500 Internal Server Error is returned.
+        """
+        with patch("food_manager.resources.recipe.update_recipe", side_effect=Exception("Unexpected failure")):
+            resp = client.put("/api/recipes/1/", json=get_recipe_json())
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Unexpected failure" in body["details"]
+
     def test_delete(self, client: FlaskClient):
         """
         Test DELETE request to remove a recipe.
@@ -789,6 +1493,33 @@ class TestRecipeItem:
         assert resp.status_code == 204
         resp = client.delete(self.INVALID_URL)
         assert resp.status_code == 404
+
+    def test_delete_recipe_not_found(self, client: FlaskClient):
+        """
+        Test DELETE /api/recipes/<id>/ that raises NotFound.
+
+        Verifies a 404 error is returned with proper message formatting.
+        """
+        with patch("food_manager.resources.recipe.delete_recipe", side_effect=NotFound()):
+            resp = client.delete("/api/recipes/999/")
+            assert resp.status_code == 404
+            body = json.loads(resp.data)
+            assert "@error" in body
+            assert body["@error"]["@message"] == "Recipe not found"
+            assert "No Recipe item with ID 999" in body["@error"]["@messages"][0]
+
+    def test_delete_recipe_internal_server_error(self, client: FlaskClient):
+        """
+        Test DELETE /api/recipes/<id>/ that raises a general Exception.
+
+        Verifies that a 500 Internal Server Error is returned with correct structure.
+        """
+        with patch("food_manager.resources.recipe.delete_recipe", side_effect=Exception("Database crash")):
+            resp = client.delete("/api/recipes/1/")
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "Database crash" in body["details"]
 
 
 class TestRecipeIngredient:
@@ -814,6 +1545,19 @@ class TestRecipeIngredient:
         assert body["recipe_id"] == 1
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
+
+    def test_get_recipe_ingredients_not_found(self, client: FlaskClient):
+        """
+        Test GET /api/recipes/<id>/ingredients/ for a non-existent recipe.
+
+        Verifies that a 404 response is returned with "Recipe not found".
+        """
+        resp = client.get("/api/recipes/999/ingredients/")
+        assert resp.status_code == 404
+        body = json.loads(resp.data)
+        assert isinstance(body, dict)
+
+
 
     def test_post(self, client: FlaskClient, setup_recipe):
         """
@@ -847,6 +1591,18 @@ class TestRecipeIngredient:
         resp = client.post(self.INVALID_URL, json=valid)
         assert resp.status_code == 404
 
+    def test_post_recipe_ingredient_internal_error(self, client: FlaskClient):
+        """
+        Test POST /api/recipes/1/ingredients/ with unexpected error.
+        """
+        with patch("food_manager.resources.recipe.add_ingredient_to_recipe", side_effect=Exception("DB down")):
+            data = {"ingredient_id": 1, "quantity": 2, "unit": "g"}
+            resp = client.post("/api/recipes/1/ingredients/", json=data)
+            assert resp.status_code == 500
+            body = json.loads(resp.data)
+            assert body["error"] == "An unexpected error occurred."
+            assert "DB down" in body["details"]
+
     def test_put(self, client: FlaskClient, setup_recipe):
         """
         Test PUT request to update a recipe ingredient.
@@ -879,6 +1635,27 @@ class TestRecipeIngredient:
         resp = client.put(self.INVALID_URL, json=update_data)
         assert resp.status_code == 404
 
+    def test_put_recipe_ingredient_internal_server_error(self, client: FlaskClient):
+        """
+        Test PUT /api/recipes/<id>/ingredients/ that raises a general exception.
+
+        Verifies that a 500 Internal Server Error is returned with correct structure.
+        """
+        update_data = {
+            "ingredient_id": 1,
+            "quantity": 5,
+            "unit": "grams"
+        }
+
+        with patch("food_manager.resources.recipe.update_recipe_ingredient", side_effect=Exception("Update failed")):
+            resp = client.put("/api/recipes/1/ingredients/", json=update_data)
+
+        assert resp.status_code == 500
+        body = json.loads(resp.data)
+        assert body["error"] == "An unexpected error occurred."
+        assert "Update failed" in body["details"]
+
+
     def test_delete(self, client: FlaskClient, setup_recipe):
         """
         Test DELETE request to remove an ingredient from a recipe.
@@ -905,6 +1682,25 @@ class TestRecipeIngredient:
         assert resp.status_code == 400
         resp = client.delete(self.INVALID_URL, json=delete_data)
         assert resp.status_code == 404
+
+    def test_delete_recipe_ingredient_internal_server_error(self, client: FlaskClient):
+        """
+        Test DELETE /api/recipes/<id>/ingredients/ that raises a general exception.
+
+        Verifies that a 500 Internal Server Error is returned with the expected format.
+        """
+        delete_data = {
+            "ingredient_id": 1
+        }
+
+        with patch("food_manager.resources.recipe.remove_ingredient_from_recipe", side_effect=Exception("Unexpected DB error")):
+            resp = client.delete("/api/recipes/1/ingredients/", json=delete_data)
+
+        assert resp.status_code == 500
+        body = json.loads(resp.data)
+        assert body["error"] == "An unexpected error occurred."
+        assert "Unexpected DB error" in body["details"]
+
 
 
 class TestRecipeCategory:
