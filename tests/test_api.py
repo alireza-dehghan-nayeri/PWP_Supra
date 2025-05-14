@@ -309,6 +309,7 @@ def get_nutritional_info_put_json():
         dict: A sample nutritional info JSON object suitable for PUT requests.
     """
     nutrition = {
+        "recipe_id": 1,
         "calories": 250,
         "protein": 10,
         "carbs": 30,
@@ -339,8 +340,10 @@ class TestFoodList:
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert isinstance(body, list)
-        if len(body) > 0:
+        assert isinstance(body, dict)
+        assert "items" in body
+        assert isinstance(body["items"], list)
+        if len(body["items"]) > 0:
             assert "name" in body[0]
             assert "food_id" in body[0]
 
@@ -371,9 +374,9 @@ class TestFoodList:
         invalid = get_food_json()
         invalid.pop("name")
         resp = client.post(self.RESOURCE_URL, json=invalid)
-        if resp.status_code == 500:
+        if resp.status_code == 400:
             print("Server Error:", resp.data.decode())
-        assert resp.status_code == 500
+        assert resp.status_code == 400
 
 
 class TestFoodItem:
@@ -395,7 +398,7 @@ class TestFoodItem:
         resp = client.get(self.INVALID_URL)
         assert resp.status_code == 404
         resp = client.get(self.INVALID_ID_URL)
-        assert resp.status_code == 500
+        assert resp.status_code == 404
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
@@ -462,8 +465,10 @@ class TestCategoryList:
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert isinstance(body, list)
-        if len(body) > 0:
+        assert isinstance(body, dict)
+        assert "items" in body
+        assert isinstance(body["items"], list)
+        if len(body["items"]) > 0:
             assert "name" in body[0]
             assert "category_id" in body[0]
 
@@ -490,7 +495,7 @@ class TestCategoryList:
         invalid = get_category_json()
         invalid.pop("name")
         resp = client.post(self.RESOURCE_URL, json=invalid)
-        assert resp.status_code == 500
+        assert resp.status_code == 400
 
 
 class TestCategoryItem:
@@ -569,8 +574,10 @@ class TestIngredientList:
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert isinstance(body, list)
-        if len(body) > 0:
+        assert isinstance(body, dict)
+        assert "items" in body
+        assert isinstance(body["items"], list)
+        if len(body["items"]) > 0:
             assert "name" in body[0]
             assert "ingredient_id" in body[0]
 
@@ -598,7 +605,7 @@ class TestIngredientList:
         invalid = get_ingredient_json()
         invalid.pop("name")
         resp = client.post(self.RESOURCE_URL, json=invalid)
-        assert resp.status_code == 500
+        assert resp.status_code == 400
 
 
 class TestIngredientItem:
@@ -679,8 +686,10 @@ class TestRecipeList:
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert isinstance(body, list)
-        if len(body) > 0:
+        assert isinstance(body, dict)
+        assert "items" in body
+        assert isinstance(body["items"], list)
+        if len(body["items"]) > 0:
             assert "recipe_id" in body[0]
             assert "food_id" in body[0]
 
@@ -709,7 +718,7 @@ class TestRecipeList:
         invalid = get_recipe_json()
         invalid.pop("food_id")
         resp = client.post(self.RESOURCE_URL, json=invalid)
-        assert resp.status_code == 500
+        assert resp.status_code == 400
 
 
 class TestRecipeItem:
@@ -991,8 +1000,10 @@ class TestNutritionalInfoList:
         resp = client.get(self.RESOURCE_URL)
         assert resp.status_code == 200
         body = json.loads(resp.data)
-        assert isinstance(body, list)
-        if len(body) > 0:
+        assert isinstance(body, dict)
+        assert "items" in body
+        assert isinstance(body["items"], list)
+        if len(body["items"]) > 0:
             assert "nutritional_info_id" in body[0]
             assert "recipe_id" in body[0]
 
@@ -1030,7 +1041,7 @@ class TestNutritionalInfoList:
         invalid = get_nutritional_info_json()
         invalid.pop("calories")
         resp = client.post(self.RESOURCE_URL, json=invalid)
-        assert resp.status_code == 500
+        assert resp.status_code == 400
 
 
 class TestNutritionalInfoItem:

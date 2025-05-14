@@ -114,6 +114,7 @@ pytest -v tests/test_api.py
 ```
 #### 📌 Output the Test Coverage
 ```sh
+pip install pytest-cov
 pytest --cov=food_manager --cov-report=html     
 ```
 

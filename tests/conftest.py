@@ -48,3 +48,9 @@ def session(app):
 
         db.session.remove()
         db.drop_all()
+
+@pytest.fixture
+def request_context(app):
+    """Provides a Flask request context for model serialization using url_for()."""
+    with app.test_request_context():
+        yield

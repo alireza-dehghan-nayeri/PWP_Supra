@@ -4,7 +4,7 @@ from food_manager.models import (
 )
 
 class TestModelSerialization:
-    def test_food_serialization(self, session):
+    def test_food_serialization(self, session, request_context):
         data = {'name': 'Rice', 'description': 'White', 'image_url': 'img.jpg'}
         obj = Food.deserialize(data)
         session.add(obj)
@@ -13,7 +13,7 @@ class TestModelSerialization:
         assert serialized['name'] == data['name']
         assert 'food_id' in serialized
 
-    def test_recipe_serialization(self, session):
+    def test_recipe_serialization(self, session, request_context):
         food = Food(name='Soup', description='Hot', image_url='img.jpg')
         session.add(food)
         session.commit()
@@ -29,9 +29,9 @@ class TestModelSerialization:
         session.commit()
         serialized = recipe.serialize()
         assert serialized['instruction'] == 'Boil water'
-        assert serialized['food']['name'] == 'Soup'
+        assert serialized['food'] == 'Soup'
 
-    def test_ingredient_serialization(self, session):
+    def test_ingredient_serialization(self, session, request_context):
         data = {'name': 'Salt', 'image_url': 'salt.jpg'}
         obj = Ingredient.deserialize(data)
         session.add(obj)
@@ -40,7 +40,7 @@ class TestModelSerialization:
         assert serialized['name'] == 'Salt'
         assert 'ingredient_id' in serialized
 
-    def test_category_serialization(self, session):
+    def test_category_serialization(self, session, request_context):
         data = {'name': 'Dinner', 'description': 'Evening meals'}
         obj = Category.deserialize(data)
         session.add(obj)
@@ -48,7 +48,7 @@ class TestModelSerialization:
         serialized = obj.serialize()
         assert serialized['name'] == 'Dinner'
 
-    def test_nutritional_info_serialization(self, session):
+    def test_nutritional_info_serialization(self, session, request_context):
         food = Food(name='Bar', description='Protein', image_url='img')
         recipe = Recipe(food=food, instruction='Unwrap and eat', prep_time=1, cook_time=0, servings=1)
         session.add_all([food, recipe])
