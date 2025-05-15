@@ -15,13 +15,6 @@ class FoodConverter(BaseConverter):
     a Food object back into a string representation of its food_id.
     """
 
-    def __init__(self, map=None):
-        """
-        Initialize the FoodConverter.
-
-        :param map: The URL map provided by the Flask application.
-        """
-        super().__init__(map)
 
     def to_python(self, value):
         """

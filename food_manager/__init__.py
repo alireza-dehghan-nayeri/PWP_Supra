@@ -80,3 +80,6 @@ def create_app(test_config=None):
         db.create_all()
 
     return app
+
+# This allows running the app with `flask --app food_manager run`
+app = create_app()

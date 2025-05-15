@@ -15,13 +15,7 @@ class IngredientConverter(BaseConverter):
     converts an Ingredient object back into a string representation of its ingredient_id.
     """
 
-    def __init__(self, map=None):
-        """
-        Initialize the IngredientConverter.
 
-        :param map: The URL map provided by the Flask application.
-        """
-        super().__init__(map)
 
     def to_python(self, value):
         """

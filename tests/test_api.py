@@ -1603,58 +1603,6 @@ class TestRecipeIngredient:
             assert body["error"] == "An unexpected error occurred."
             assert "DB down" in body["details"]
 
-    def test_put(self, client: FlaskClient, setup_recipe):
-        """
-        Test PUT request to update a recipe ingredient.
-
-        First adds an ingredient to a recipe, then updates its quantity and unit.
-        Verifies proper error responses for missing ingredient_id or invalid recipe IDs.
-        """
-        ingredient = get_ingredient_json()
-        ingredient_resp = client.post("/api/ingredients/", json=ingredient)
-        ingredient_id = json.loads(ingredient_resp.data)["ingredient_id"]
-        add_data = {
-            "ingredient_id": ingredient_id,
-            "quantity": 2,
-            "unit": "cups"
-        }
-        client.post(self.RESOURCE_URL, json=add_data)
-        update_data = {
-            "ingredient_id": ingredient_id,
-            "quantity": 3,
-            "unit": "tablespoons"
-        }
-        resp = client.put(self.RESOURCE_URL, json=update_data)
-        assert resp.status_code == 200
-        body = json.loads(resp.data)
-        assert "message" in body
-        assert body["recipe_id"] == 1
-        invalid = {"quantity": 4, "unit": "teaspoons"}
-        resp = client.put(self.RESOURCE_URL, json=invalid)
-        assert resp.status_code == 400
-        resp = client.put(self.INVALID_URL, json=update_data)
-        assert resp.status_code == 404
-
-    def test_put_recipe_ingredient_internal_server_error(self, client: FlaskClient):
-        """
-        Test PUT /api/recipes/<id>/ingredients/ that raises a general exception.
-
-        Verifies that a 500 Internal Server Error is returned with correct structure.
-        """
-        update_data = {
-            "ingredient_id": 1,
-            "quantity": 5,
-            "unit": "grams"
-        }
-
-        with patch("food_manager.resources.recipe.update_recipe_ingredient", side_effect=Exception("Update failed")):
-            resp = client.put("/api/recipes/1/ingredients/", json=update_data)
-
-        assert resp.status_code == 500
-        body = json.loads(resp.data)
-        assert body["error"] == "An unexpected error occurred."
-        assert "Update failed" in body["details"]
-
 
     def test_delete(self, client: FlaskClient, setup_recipe):
         """

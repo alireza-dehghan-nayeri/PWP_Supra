@@ -267,39 +267,6 @@ class RecipeIngredientResource(Resource):
             mimetype="application/json"
         )
 
-    @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeIngredientResource/put.yml")
-    def put(self, recipe_id):
-        """
-        Handle PUT requests to update an ingredient's details within a recipe.
-        Expects JSON data with 'ingredient_id', and optionally 'quantity' and 'unit'.
-        :param recipe_id: The unique identifier of the recipe.
-        :return: A JSON response with a success message if the ingredient is updated,
-                 or an error message if required data is missing or an error occurs.
-        """
-        data = request.get_json()
-        ingredient_id = data.get("ingredient_id")
-        quantity = data.get("quantity")
-        unit = data.get("unit")
-
-        if not ingredient_id:
-            return Response(
-                json.dumps({"error": "ingredient_id is required."}),
-                400,
-                mimetype="application/json"
-            )
-
-        try:
-            update_recipe_ingredient(recipe_id, ingredient_id, quantity, unit)
-            return Response(
-                json.dumps({
-                    "message": "Ingredient updated successfully!",
-                    "recipe_id": recipe_id
-                }),
-                200,
-                mimetype="application/json"
-            )
-        except Exception as e:
-            return internal_server_error(e)
 
     @swag_from(os.getcwd() + f"{DOC_FOLDER}recipe/RecipeIngredientResource/delete.yml")
     def delete(self, recipe_id):

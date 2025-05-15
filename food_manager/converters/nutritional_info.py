@@ -15,13 +15,7 @@ class NutritionalInfoConverter(BaseConverter):
     converts a NutritionalInfo object back into a string representation of its nutritional_info_id.
     """
 
-    def __init__(self, map=None):
-        """
-        Initialize the NutritionalInfoConverter.
 
-        :param map: The URL map provided by the Flask application.
-        """
-        super().__init__(map)
 
     def to_python(self, value):
         """

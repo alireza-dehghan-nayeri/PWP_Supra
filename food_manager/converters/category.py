@@ -16,13 +16,6 @@ class CategoryConverter(BaseConverter):
     queries and converts a Category object back to a URL-safe string.
     """
 
-    def __init__(self, map=None):
-        """
-        Initialize the CategoryConverter.
-
-        :param map: The URL map passed from the Flask application.
-        """
-        super().__init__(map)
 
     def to_python(self, value):
         """

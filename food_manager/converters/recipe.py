@@ -16,13 +16,7 @@ class RecipeConverter(BaseConverter):
     corresponding Recipe objects, ensuring that only valid IDs are accepted.
     """
 
-    def __init__(self, map=None):
-        """
-        Initialize the RecipeConverter.
 
-        :param map: The URL map provided by the Flask application.
-        """
-        super().__init__(map)
 
     def to_python(self, value):
         """
