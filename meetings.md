@@ -39,6 +39,7 @@ The meeting focused on the second deliverable, which was the Database implementa
 
 ### Minutes
 *Summary of what was discussed during the meeting*
+
 The meeting focused on the third deliverable: the API implementation of our project. During the session, we presented our API code. The demonstration included running tests and showing the coverage report. We received feedback on code structure, error handling, resource design, and testing practices. Specific improvement areas were identified to enhance clarity, maintainability, and alignment with the project requirements.
 
 ### Action points
